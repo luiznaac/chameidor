@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component
 @Component
 object JsonMapper {
 
-    val mapper: ObjectMapper = ObjectMapper()
+    private val mapper: ObjectMapper = ObjectMapper()
         .registerKotlinModule()
         .registerModule(JavaTimeModule())
         .registerModule(KotlinxLocalDateTimeModule())

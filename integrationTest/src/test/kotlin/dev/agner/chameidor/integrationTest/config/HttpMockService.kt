@@ -8,7 +8,7 @@ import dev.agner.chameidor.usecase.configuration.JsonMapper
 object HttpMockService {
 
     private val server = WireMockServer(3000)
-    private val mapper = JsonMapper.mapper
+    private val mapper = JsonMapper.jsonAdapter()
 
     init {
         server.start()

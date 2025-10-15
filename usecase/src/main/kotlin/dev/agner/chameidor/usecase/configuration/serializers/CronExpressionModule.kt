@@ -16,7 +16,7 @@ class CronExpressionModule : SimpleModule() {
             CronExpression::class.java,
             object : JsonSerializer<CronExpression>() {
                 override fun serialize(value: CronExpression, gen: JsonGenerator, serializers: SerializerProvider) {
-                    gen.writeString(value.toString().replaceFirst("* ", ""))
+                    gen.writeString(value.toString().replaceFirst("0 ", ""))
                 }
             },
         )
@@ -24,7 +24,7 @@ class CronExpressionModule : SimpleModule() {
             CronExpression::class.java,
             object : JsonDeserializer<CronExpression>() {
                 override fun deserialize(p: JsonParser, ctxt: DeserializationContext) =
-                    CronExpression.parse("* " + p.codec.readTree<JsonNode>(p).textValue())
+                    CronExpression.parse("0 " + p.codec.readTree<JsonNode>(p).textValue())
             },
         )
     }
