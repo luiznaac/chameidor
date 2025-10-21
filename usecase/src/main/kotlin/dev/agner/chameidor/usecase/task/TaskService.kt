@@ -51,8 +51,8 @@ class TaskService(
                 logger.info("Found $taskCount tasks to execute")
             }
 
-            // Calculate wait time so every execution happens exactly every 20 seconds (except when it takes longer)
-            val waitFor = max(1.seconds.inWholeMilliseconds - execDuration.inWholeMilliseconds, 0)
+            // Calculate wait time so every execution happens exactly every 10 seconds (except when it takes longer)
+            val waitFor = max(10.seconds.inWholeMilliseconds - execDuration.inWholeMilliseconds, 0)
             logger.info("Will wait $waitFor milliseconds before executing next batch of tasks")
             delay(waitFor.milliseconds)
         }
