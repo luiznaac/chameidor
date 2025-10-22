@@ -46,7 +46,7 @@ class TaskExecutor(
         if (exec.value.isSuccess) {
             TaskExecutionResult.Success(exec.duration, exec.value.getOrNull())
         } else {
-            TaskExecutionResult.Failure(exec.duration, exec.value.exceptionOrNull()!!)
+            TaskExecutionResult.Failure(exec.duration, exec.value.exceptionOrNull()!!.message ?: "Unknown error")
         }
     }
 }
@@ -57,5 +57,5 @@ sealed class TaskExecutionResult(
     val duration: Duration,
 ) {
     class Success(duration: Duration, val response: Any?) : TaskExecutionResult(duration)
-    class Failure(duration: Duration, val exception: Throwable) : TaskExecutionResult(duration)
+    class Failure(duration: Duration, val message: String) : TaskExecutionResult(duration)
 }

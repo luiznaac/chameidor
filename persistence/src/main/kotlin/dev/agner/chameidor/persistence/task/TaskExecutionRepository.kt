@@ -26,11 +26,7 @@ class TaskExecutionRepository(private val clock: Clock) : ITaskExecutionReposito
                     }
                     is TaskExecutionResult.Failure -> {
                         status = "FAILURE"
-                        result = mapOf(
-                            "message" to taskExecutionResult.exception.message,
-                            "type" to taskExecutionResult.exception::class.qualifiedName,
-                            "stackTrace" to taskExecutionResult.exception.stackTraceToString(),
-                        )
+                        result = mapOf("message" to taskExecutionResult.message)
                     }
                 }
 

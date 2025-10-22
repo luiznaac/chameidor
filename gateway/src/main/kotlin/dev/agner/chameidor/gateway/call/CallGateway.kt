@@ -28,10 +28,13 @@ class CallGateway(
             }
             .run {
                 when {
-                    status.isSuccess() -> body<Any>()
-                    else -> mapOf(
-                        "message" to "Call failed with status code ${status.value}",
-                    )
+                    status.isSuccess() ->
+                        try {
+                            body<Map<String, Any?>>()
+                        } catch (e: Exception) {
+                            null
+                        }
+                    else -> throw IllegalStateException("Call to $host$endpoint failed with status $status")
                 }
             }
 }
