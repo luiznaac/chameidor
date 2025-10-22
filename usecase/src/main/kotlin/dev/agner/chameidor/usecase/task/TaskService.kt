@@ -1,10 +1,10 @@
 package dev.agner.chameidor.usecase.task
 
-import dev.agner.chameidor.usecase.commons.logger
 import dev.agner.chameidor.usecase.commons.now
 import dev.agner.chameidor.usecase.task.TaskStatus.QUEUED
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
@@ -24,10 +24,10 @@ class TaskService(
     private val taskExecutor: TaskExecutor,
 ) {
 
-    private val logger = logger()
+    private val globalJob: Job
 
     init {
-        GlobalScope.launch { execute() }
+        globalJob = GlobalScope.launch { execute() }
     }
 
     suspend fun execute() {
@@ -53,4 +53,6 @@ class TaskService(
 
     suspend fun register(creation: TaskCreation, externalSystem: String) =
         repository.createTask(creation, externalSystem)
+
+    suspend fun isRunning() = globalJob.isActive
 }
