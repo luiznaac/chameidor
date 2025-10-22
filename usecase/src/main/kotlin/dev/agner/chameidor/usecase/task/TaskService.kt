@@ -36,24 +36,17 @@ class TaskService(
         while (true) {
             val execDuration = measureTime {
                 val now = LocalDateTime.now(clock)
-                logger.info("Finding executable tasks at $now")
-
-                val taskCount = repository.findExecutableTasks(now)
+                repository.findExecutableTasks(now)
                     .onEach {
-                        logger.info("Queuing task ${it.id}")
                         repository.updateStatus(it.id, QUEUED)
                         GlobalScope.launch {
                             taskExecutor.execute(it)
                         }
                     }
-                    .count()
-
-                logger.info("Found $taskCount tasks to execute")
             }
 
             // Calculate wait time so every execution happens exactly every 10 seconds (except when it takes longer)
             val waitFor = max(10.seconds.inWholeMilliseconds - execDuration.inWholeMilliseconds, 0)
-            logger.info("Will wait $waitFor milliseconds before executing next batch of tasks")
             delay(waitFor.milliseconds)
         }
     }

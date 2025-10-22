@@ -8,6 +8,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import org.springframework.stereotype.Component
 
 @Component
@@ -25,5 +26,12 @@ class CallGateway(
                     setBody(it)
                 }
             }
-            .body<Any?>()
+            .run {
+                when {
+                    status.isSuccess() -> body<Any>()
+                    else -> mapOf(
+                        "message" to "Call failed with status code ${status.value}",
+                    )
+                }
+            }
 }

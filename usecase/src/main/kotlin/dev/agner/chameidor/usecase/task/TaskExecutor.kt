@@ -1,6 +1,5 @@
 package dev.agner.chameidor.usecase.task
 
-import dev.agner.chameidor.usecase.commons.logger
 import dev.agner.chameidor.usecase.commons.now
 import dev.agner.chameidor.usecase.task.Task.PeriodicTask
 import dev.agner.chameidor.usecase.task.TaskStatus.EXECUTING
@@ -20,19 +19,18 @@ class TaskExecutor(
     private val taskRepository: ITaskRepository,
     private val taskExecutionRepository: ITaskExecutionRepository,
 ) {
-    private val logger = logger()
 
     suspend fun execute(task: Task) = with(task) {
         val now = LocalDateTime.now(clock)
-        logger.info("Executing task $id at $now")
         taskRepository.updateStatus(id, EXECUTING)
 
-        runTask(task).also { taskExecutionRepository.save(task.id, now, it) }
+        runTask(task).also {
+            taskExecutionRepository.save(task.id, now, it)
+        }
 
         taskRepository.updateExecutedAt(id, now)
 
         if (this is PeriodicTask) {
-            logger.info("Updating next execution for task $id")
             val nextExecutionAt = now.nextBy(cron)
             taskRepository.updateNextExecution(id, nextExecutionAt)
         }
