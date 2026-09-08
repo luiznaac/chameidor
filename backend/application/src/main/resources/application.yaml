@@ -1,0 +1,11 @@
+ktor:
+  port: ${KTOR_PORT:8080}
+  wait: true
+
+mysql:
+  host: ${MYSQL_HOST}
+  user: ${MYSQL_USER}
+  password: ${MYSQL_PASSWORD}
+
+enqueue:
+  period: ${ENQUEUE_TASKS_PERIOD:10}

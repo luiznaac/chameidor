@@ -1,0 +1,10 @@
+**/.git
+**/.gradle
+**/build
+**/node_modules
+**/dist
+**/.idea
+**/.kotlin
+**/*.tsbuildinfo
+**/.env
+**/.env.*.local

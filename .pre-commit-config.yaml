@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: detekt
+        name: detekt (backend)
+        entry: sh -c 'cd backend && ./gradlew --quiet detekt'
+        language: system
+        files: ^backend/.*\.(kt|kts)$
+        pass_filenames: false
+      - id: frontend-typecheck
+        name: frontend typecheck
+        entry: sh -c 'cd frontend && npm run typecheck'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false

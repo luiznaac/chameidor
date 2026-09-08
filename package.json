@@ -1,0 +1,18 @@
+{
+  "name": "chameidor-monorepo",
+  "private": true,
+  "description": "Task runner for the chameidor monorepo (backend/ + frontend/). Not a real Node package — just scripts.",
+  "scripts": {
+    "setup": "npm --prefix frontend install",
+    "be:build": "cd backend && ./gradlew clean build",
+    "be:test": "cd backend && ./gradlew test",
+    "be:detekt": "cd backend && ./gradlew detekt",
+    "fe:dev": "npm --prefix frontend run dev",
+    "fe:build": "npm --prefix frontend run build",
+    "fe:typecheck": "npm --prefix frontend run typecheck",
+    "check": "npm run be:build && npm run fe:typecheck && npm run fe:build",
+    "db": "docker compose -f backend/docker-compose.yml up -d mysql",
+    "up": "docker compose up --build",
+    "down": "docker compose down"
+  }
+}
