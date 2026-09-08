@@ -36,8 +36,8 @@ together: `supervisord` runs the Ktor app (`API_PORT`/8080) and `nginx`
 reverse-proxies `/api` → the app). No DB in the image. `docker-compose.yml` at
 the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose.yml`
 is the MySQL-only compose for backend-only local runs.
-`.github/workflows/docker-image.yml` pushes `luiznaac/chameidor:latest` +
-`:sha-<short>` after "Build and Test" succeeds on `master`.
+`.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` +
+`:sha-<short>` after the "CI" workflow succeeds on `master`.
 
 ## Related repositories
 

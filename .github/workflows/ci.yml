@@ -1,20 +1,19 @@
-name: Build and Test
+name: CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [master]
   pull_request:
-    branches: [ "master" ]
 
 jobs:
   backend:
-    name: backend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+
       - name: Cache Gradle Cache
         uses: actions/cache@v4
         with:
@@ -29,28 +28,32 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper${{ hashFiles('backend/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-wrapper
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
           java-version: '21'
+
       - name: Change wrapper permissions
         run: chmod +x ./gradlew
+
       - name: Run build
         run: ./gradlew clean build
 
   frontend:
-    name: frontend
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
