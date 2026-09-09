@@ -1,3 +1,11 @@
+# DB-only compose file for local dev: run just MySQL and point a locally-run
+# ./gradlew :application:run at it.
+#
+#   docker compose -f backend/docker-compose.yml up -d mysql
+#
+# The schema is NOT seeded here anymore: db/migration/V*.sql is applied by Flyway
+# (./gradlew :persistence:migrate locally, deploy/entrypoint.sh in the container).
+
 services:
   mysql:
     image: mysql:9.4.0
@@ -7,5 +15,3 @@ services:
       - MYSQL_DATABASE=chameidor
     ports:
       - "3306:3306"
-    volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql

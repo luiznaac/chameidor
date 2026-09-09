@@ -109,8 +109,10 @@ Example: adding a new HTTP endpoint backed by new persisted state.
    <Name>Controller(private val service: <Service>) : ControllerTemplate` and implement `routes()`
    using Ktor's routing DSL (`route`, `get`/`post`/…, `call.receive<T>()`, `call.respond(...)`).
    You do not need to register it anywhere — component scanning + `KtorConfig` handle that.
-6. **Add a MySQL migration** to `mysql/init.sql` if a new table is needed for local dev, matching
-   the Exposed `Table` definition.
+6. **Add a migration** if a new table or column is needed: point `MYSQL_HOST`/`MYSQL_USER`/
+   `MYSQL_PASSWORD` at a database already migrated to head, then
+   `./gradlew :persistence:generateMigrationScript -Pname=V2__add_something` — diffs the Exposed
+   `Table` objects against it and writes the SQL. Review the output before committing; see §7.
 7. **Write tests** at each layer (see §6) and, if the feature crosses process boundaries in a way
    worth covering end-to-end, add a scenario to `integrationTest`.
 
@@ -139,10 +141,47 @@ considering a change done.
   tests using the `ResetWiremock`/`StopKtorServer` Kotest extensions. Reserve this layer for
   behavior that only makes sense across process/module boundaries (e.g. "a registered task
   actually gets called on schedule") — don't duplicate unit-level coverage here.
-- Run: `./gradlew test` (unit only). Aggregated coverage: `./gradlew testCoverageReport`
-  (JaCoCo XML+HTML across all subprojects).
+- `./gradlew test` (and CI's `./gradlew clean build`) runs every module's `test` task, `integrationTest`
+  included — it needs a Docker daemon and takes noticeably longer, since it also builds and boots
+  `backend/docker-compose.yml`. Run a single module's tests with `./gradlew :usecase:test` etc. to
+  skip that when iterating on something that doesn't touch it. Aggregated coverage:
+  `./gradlew testCoverageReport` (JaCoCo XML+HTML across all subprojects).
 
-## 7. Configuration
+## 7. Database migrations
+
+The schema is versioned SQL under `persistence/src/main/resources/db/migration/V*.sql` — there is
+no more `mysql/init.sql`. Two tools, each doing one half of the job:
+
+- **Exposed's migration module** (`persistence/.../migration/MigrationScripts.kt`) *generates* the
+  SQL by diffing `allTables` (every `Table` object, defined in the same file) against a live
+  database. It never applies anything.
+- **Flyway** (`persistence/.../migration/Migrator.kt`) *applies* those `V*.sql` files. It runs as
+  a standalone `main()` — packaged as a second start script, `bin/migrate`, alongside
+  `bin/application` (see `application/build.gradle.kts`) — invoked from `deploy/entrypoint.sh`
+  before the app starts. Not from the Spring context: `KtorConfig` blocks the main thread for the
+  process's entire lifetime (`ktor.wait: true`), so nothing hooked into Spring's lifecycle would
+  run before the server starts accepting requests anyway (see §2's wiring model). A failed
+  migration aborts the container instead of serving traffic against a stale schema.
+  `baselineOnMigrate` means a database that already has the tables (a local volume from before
+  migrations existed, or any of today's production databases) gets stamped at V1 rather than
+  having it re-applied.
+
+Changing a table:
+
+1. Edit the `Table` object in `persistence/.../task/` (or wherever the feature's tables live).
+2. Point `MYSQL_HOST`/`MYSQL_USER`/`MYSQL_PASSWORD` at a database already migrated to head, then
+   `./gradlew :persistence:generateMigrationScript -Pname=V2__add_something` (or
+   `npm run db:generate -- -Pname=V2__add_something` from the repo root). Review the generated
+   `.sql` before committing — the diff is mechanical and won't know a rename is a rename rather
+   than a drop-and-add.
+3. `./gradlew :persistence:migrate` (or `npm run db:migrate`) to apply it locally.
+
+`integrationTest/.../tests/MigrationSchemaTest.kt` is the guard: `DockerComposeExtension`
+migrates the compose-provided MySQL to head before any spec runs, and this test asserts
+`MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table`
+changes without a matching migration (or vice versa), this test fails.
+
+## 8. Configuration
 
 `application.yaml` (see `application/src/main/resources/`):
 
@@ -156,7 +195,7 @@ considering a change done.
 Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setting — don't hardcode
 values that differ between local/prod.
 
-## 8. Build, run, deploy
+## 9. Build, run, deploy
 
 ```bash
 ./gradlew clean build          # full build, same as CI
@@ -175,7 +214,7 @@ Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14
 one built from the repo-root `Dockerfile` (backend + built SPA under supervisord + nginx) — see
 `../CLAUDE.md`.
 
-## 9. Git & CI
+## 10. Git & CI
 
 - Remote: `git@github.com:luiznaac/chameidor.git`, default branch `master`.
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
@@ -184,7 +223,10 @@ one built from the repo-root `Dockerfile` (backend + built SPA under supervisord
   `../.github/workflows/docker-image.yml` runs after that succeeds on `master` and publishes the
   combined Docker image.
 
-## 10. Related repositories
+**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change — no exceptions for agent-authored commits.
+
+## 11. Related repositories
 
 Generated from [environments/kotlin](../../environments/CLAUDE.md), and shares the same
 architecture with [portfolio-2](../../portfolio-2/CLAUDE.md) — which uses chameidor as its

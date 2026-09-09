@@ -45,7 +45,7 @@ Ports are configurable with `API_PORT` / `WEB_PORT`.
 
 **Publishing:** every push to `master` that touches `backend/`, `frontend/`,
 `Dockerfile`, or `deploy/` builds and pushes `luiznaac/chameidor:latest` and
-`:sha-<short>` to Docker Hub (`.github/workflows/docker-image.yml`).
+`:v<run-number>` (a sequential build number) to Docker Hub (`.github/workflows/docker-image.yml`).
 
 ## Checks
 

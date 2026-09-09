@@ -101,7 +101,7 @@ class TaskRepository(private val clock: Clock) : ITaskRepository {
 
     private fun saveToHistory(taskEntity: TaskEntity) {
         TaskHistoryEntity.new {
-            taskId = taskEntity.id.value
+            taskId = taskEntity.id
             host = taskEntity.host
             endpoint = taskEntity.endpoint
             data = taskEntity.data
