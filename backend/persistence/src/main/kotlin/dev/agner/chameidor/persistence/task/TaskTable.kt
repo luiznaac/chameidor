@@ -25,9 +25,12 @@ object TaskTable : IntIdTable("task") {
     val cron = varchar("cron", 20).nullable()
     val status = varchar("status", 30)
     val executedAt = datetime("executed_at").nullable()
-    val nextExecutionAt = datetime("next_execution_at").nullable()
+    val nextExecutionAt = datetime("next_execution_at")
     val createdBy = varchar("created_by", 50)
     val createdAt = datetime("created_at")
+
+    // Backs findExecutableTasks' `status = WAITING AND next_execution_at <= now` poll.
+    init { index("idx_status_next_execution", isUnique = false, status, nextExecutionAt) }
 }
 
 @OptIn(ExperimentalTime::class)

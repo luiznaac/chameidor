@@ -14,7 +14,7 @@ private val mapper = JsonMapper.jsonAdapter()
 
 @OptIn(ExperimentalTime::class)
 object TaskHistoryTable : IntIdTable("task_history") {
-    val taskId = integer("task_id")
+    val taskId = reference("task_id", TaskTable)
     val host = varchar("host", 50)
     val endpoint = varchar("endpoint", 255)
     val data = json("data", { mapper.writeValueAsString(it) }, { mapper.readValue<Any>(it) }).nullable()

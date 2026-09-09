@@ -20,10 +20,16 @@ fields omitted, dates as ISO-8601 strings. Any change to a request/response DTO
 on one side must update the other **in the same commit** — that's the reason
 these two live in one repo.
 
+## Git workflow
+
+**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change.
+
 ## Tooling
 
 Root `package.json` holds script shims only (`npm run be:build`, `npm run
-fe:build`, `npm run check`, `npm run db`, `npm run up`). It has no dependencies
+fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run
+db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies
 and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes
 hooks by path (`^backend/` → `./gradlew detekt`, `^frontend/` → `npm run
 typecheck`).
@@ -35,9 +41,13 @@ together: `supervisord` runs the Ktor app (`API_PORT`/8080) and `nginx`
 (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and
 reverse-proxies `/api` → the app). No DB in the image. `docker-compose.yml` at
 the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose.yml`
-is the MySQL-only compose for backend-only local runs.
+is the MySQL-only compose for backend-only local runs. The schema comes from
+`backend/persistence/src/main/resources/db/migration/V*.sql`, applied by Flyway
+(`bin/migrate` in the image) from `deploy/entrypoint.sh` before the app starts —
+see [backend/CLAUDE.md](backend/CLAUDE.md) §7.
 `.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` +
-`:sha-<short>` after the "CI" workflow succeeds on `master`.
+`:v<run-number>` (a sequential build number, `github.run_number`) after the "CI" workflow
+succeeds on `master`.
 
 ## Related repositories
 
