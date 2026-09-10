@@ -1,16 +1,18 @@
-# CLAUDE.md — chameidor monorepo
+# DEVELOPMENT.md — chameidor monorepo
+
+Development guidelines for anyone (human, agent, or tool) working in this repository.
 
 Two projects, one repo:
 
 - **`backend/`** — the Kotlin/Ktor + Spring-DI + Exposed task scheduler/executor.
-  All backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Its
-  architecture, conventions and the rules for evolving it are in
-  [backend/CLAUDE.md](backend/CLAUDE.md) — read that before touching `backend/`.
+  All backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture,
+  conventions and rules for evolving it are in [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) —
+  read that before touching `backend/`.
 - **`frontend/`** — the React/Vite SPA. Commands run from `frontend/`
   (`npm --prefix frontend run <script>`). Details in
   [frontend/README.md](frontend/README.md).
 
-## The one cross-cutting rule
+## Cross-cutting rule
 
 `frontend/src/api/types.ts` is a hand-maintained mirror of the edge DTOs in
 `backend/http-api/src/main/kotlin/dev/agner/chameidor/httpapi/controller/`
@@ -22,8 +24,8 @@ these two live in one repo.
 
 ## Git workflow
 
-**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change.
+**Do not commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change. This applies to all contributors.
 
 ## Tooling
 
@@ -44,7 +46,7 @@ the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose
 is the MySQL-only compose for backend-only local runs. The schema comes from
 `backend/persistence/src/main/resources/db/migration/V*.sql`, applied by Flyway
 (`bin/migrate` in the image) from `deploy/entrypoint.sh` before the app starts —
-see [backend/CLAUDE.md](backend/CLAUDE.md) §7.
+see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) §7.
 `.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` +
 `:v<run-number>` (a sequential build number, `github.run_number`) after the "CI" workflow
 succeeds on `master`.
@@ -52,6 +54,6 @@ succeeds on `master`.
 ## Related repositories
 
 Same monorepo shape (backend + Vite SPA, combined image) as
-[../shougong](../shougong/CLAUDE.md). The backend shares its hexagonal
-architecture with [../portfolio-2](../portfolio-2/CLAUDE.md) and the
-[../environments](../environments/CLAUDE.md) kotlin scaffold.
+[../shougong](../shougong/DEVELOPMENT.md). The backend shares its hexagonal
+architecture with [../portfolio-2](../portfolio-2/DEVELOPMENT.md) and the
+[../environments](../environments/DEVELOPMENT.md) kotlin scaffold.

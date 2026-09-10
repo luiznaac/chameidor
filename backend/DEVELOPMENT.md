@@ -1,15 +1,15 @@
-# CLAUDE.md — chameidor backend
+# DEVELOPMENT.md — chameidor backend
 
-Implementation guidelines for AI agents working in the chameidor **backend** (`backend/`). This is
-the backend half of a two-project repo — the React SPA lives in [`../frontend/`](../frontend) and
-the monorepo-level layout is described in [`../CLAUDE.md`](../CLAUDE.md). This document describes
-the backend architecture and the rules to follow when writing code here, not just a facts dump —
-when in doubt about how to implement something, follow the patterns below rather than inventing a
-new one.
+Development guidelines for anyone (human, agent, or tool) working in the chameidor **backend**
+(`backend/`). This is the backend half of a two-project repo — the React SPA lives in
+[`../frontend/`](../frontend) and the monorepo-level layout is described in
+[`../DEVELOPMENT.md`](../DEVELOPMENT.md). This document describes the backend architecture and
+the rules to follow when writing code here, not just a facts dump — when in doubt about how to
+implement something, follow the patterns below rather than inventing a new one.
 
 All backend commands run from `backend/` (`cd backend && ./gradlew …`).
 
-## 1. What this service does
+## What this service does
 
 chameidor is a task scheduler/executor. Clients register a **one-time** or **periodic** (cron)
 task over HTTP, giving a target host/endpoint and a payload. chameidor persists the task, and a
@@ -18,7 +18,7 @@ stored payload, and records the outcome (success/failure, next execution time fo
 tasks). Every registration must carry an `X-External-System` header identifying the caller — this
 is stored as `createdBy` and lets multiple systems share one chameidor instance safely.
 
-## 2. Architecture
+## Architecture
 
 This is a Gradle multi-module project. Modules form strict layers; **dependencies only point
 inward**, never outward:
@@ -71,7 +71,7 @@ wires everything, via component scanning. Concretely:
 This means: **adding a new HTTP endpoint never means touching `KtorConfig`.** You only add a new
 `ControllerTemplate` implementation; it is picked up automatically.
 
-## 3. Design principles
+## Design principles
 
 - **Interfaces live where they're consumed, not where they're implemented.** `ITaskRepository`
   lives in `usecase` because that's who needs it; `persistence` depends on `usecase` to implement
@@ -91,7 +91,7 @@ This means: **adding a new HTTP endpoint never means touching `KtorConfig`.** Yo
 - Prefer extending an existing module's package (e.g. `usecase/task/`) over creating a new
   top-level package for a closely related concept.
 
-## 4. How to implement a new feature (walkthrough)
+## How to implement a new feature (walkthrough)
 
 Example: adding a new HTTP endpoint backed by new persisted state.
 
@@ -116,7 +116,7 @@ Example: adding a new HTTP endpoint backed by new persisted state.
 7. **Write tests** at each layer (see §6) and, if the feature crosses process boundaries in a way
    worth covering end-to-end, add a scenario to `integrationTest`.
 
-## 5. Code style
+## Code style
 
 Enforced by Detekt 1.23.8 + `detekt-formatting`, split into `config/detekt/config.yml` (rules) and
 `config/detekt/format.yml` (formatting). `maxIssues: 0`, `autoCorrect: true`,
@@ -130,7 +130,7 @@ considering a change done.
 - Kotlin compiler: `allWarningsAsErrors = true`, `-Xjvm-default=all` — a compiler warning is a
   build failure here, don't suppress it, fix it.
 
-## 6. Testing
+## Testing
 
 - **Unit tests** live in each module's `src/test/kotlin`, mirroring the main package structure.
   Framework: **Kotest**, `StringSpec` style (`"description" { ... shouldBe ... }`), run on the
@@ -147,7 +147,7 @@ considering a change done.
   skip that when iterating on something that doesn't touch it. Aggregated coverage:
   `./gradlew testCoverageReport` (JaCoCo XML+HTML across all subprojects).
 
-## 7. Database migrations
+## Database migrations
 
 The schema is versioned SQL under `persistence/src/main/resources/db/migration/V*.sql` — there is
 no more `mysql/init.sql`. Two tools, each doing one half of the job:
@@ -181,7 +181,7 @@ migrates the compose-provided MySQL to head before any spec runs, and this test 
 `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table`
 changes without a matching migration (or vice versa), this test fails.
 
-## 8. Configuration
+## Configuration
 
 `application.yaml` (see `application/src/main/resources/`):
 
@@ -195,7 +195,7 @@ changes without a matching migration (or vice versa), this test fails.
 Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setting — don't hardcode
 values that differ between local/prod.
 
-## 9. Build, run, deploy
+## Build, run, deploy
 
 ```bash
 ./gradlew clean build          # full build, same as CI
@@ -212,9 +212,9 @@ repo root) starts MySQL 9.4.0 only (seeded from `mysql/init.sql`), then run
 Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14-jdk21` →
 `openjdk:21-slim`, port `8080`). The published `luiznaac/chameidor` image is now the **combined**
 one built from the repo-root `Dockerfile` (backend + built SPA under supervisord + nginx) — see
-`../CLAUDE.md`.
+`../DEVELOPMENT.md`.
 
-## 10. Git & CI
+## Git & CI
 
 - Remote: `git@github.com:luiznaac/chameidor.git`, default branch `master`.
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
@@ -223,14 +223,14 @@ one built from the repo-root `Dockerfile` (backend + built SPA under supervisord
   `../.github/workflows/docker-image.yml` runs after that succeeds on `master` and publishes the
   combined Docker image.
 
-**AI agents: never commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change — no exceptions for agent-authored commits.
+**Do not commit directly to `master`.** Always create a feature branch and open a PR,
+even for a small or "obviously safe" change — no exceptions.
 
-## 11. Related repositories
+## Related repositories
 
-Generated from [environments/kotlin](../../environments/CLAUDE.md), and shares the same
-architecture with [portfolio-2](../../portfolio-2/CLAUDE.md) — which uses chameidor as its
+Generated from [environments/kotlin](../../environments/DEVELOPMENT.md), and shares the same
+architecture with [portfolio-2](../../portfolio-2/DEVELOPMENT.md) — which uses chameidor as its
 task-scheduling backend via `ChameidorGateway`. The monorepo split (`backend/` + `frontend/`,
-combined Docker image) mirrors [shougong](../../shougong/CLAUDE.md). If you change a cross-cutting
+combined Docker image) mirrors [shougong](../../shougong/DEVELOPMENT.md). If you change a cross-cutting
 convention here (e.g. the `ControllerTemplate` wiring, the Exposed repository pattern), consider
 whether it should be ported to the others as well.
