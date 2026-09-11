@@ -100,7 +100,7 @@ These endpoints back the [`frontend/`](../frontend) SPA.
 - `persistence` — how tasks and their history are stored in MySQL.
 - `gateway` — how chameidor calls back into the systems that registered tasks.
 
-See [CLAUDE.md](CLAUDE.md) if you're going to make changes — it documents the architecture and
+See [AGENTS.md](AGENTS.md) if you're going to make changes — it documents the architecture and
 conventions in detail.
 
 ## Deployment
