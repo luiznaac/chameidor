@@ -21,8 +21,14 @@ export function Layout() {
             <NavLink to="/" end className={linkClass}>
               Painel
             </NavLink>
+            <NavLink to="/systems" className={linkClass}>
+              Sistemas
+            </NavLink>
             <NavLink to="/tasks" end className={linkClass}>
               Tasks
+            </NavLink>
+            <NavLink to="/executions" className={linkClass}>
+              Execuções
             </NavLink>
             <NavLink to="/tasks/new" className={linkClass}>
               Nova task

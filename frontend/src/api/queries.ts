@@ -6,12 +6,18 @@ import type {
   TaskListFilter,
 } from "./types.ts";
 
+/** Task window loaded for the Tenant Portal / Execution Explorer joins. */
+export const ALL_TASKS_LIMIT = 500;
+/** Default execution window for the Execution Explorer. */
+export const RECENT_EXECUTIONS_LIMIT = 200;
+
 export const keys = {
   tasks: (filter?: TaskListFilter) => ["tasks", filter ?? {}] as const,
+  allTasks: (limit: number) => ["tasks", { limit }] as const,
   task: (id: number) => ["tasks", id] as const,
   executions: (id: number) => ["tasks", id, "executions"] as const,
   history: (id: number) => ["tasks", id, "history"] as const,
-  recentExecutions: ["tasks", "executions"] as const,
+  recentExecutions: (limit: number) => ["tasks", "executions", limit] as const,
   health: ["health"] as const,
 };
 
@@ -19,6 +25,13 @@ export function useTasks(filter: TaskListFilter = {}) {
   return useQuery({
     queryKey: keys.tasks(filter),
     queryFn: () => api.listTasks(filter),
+  });
+}
+
+export function useAllTasks(limit = ALL_TASKS_LIMIT) {
+  return useQuery({
+    queryKey: keys.allTasks(limit),
+    queryFn: () => api.listTasks({ limit }),
   });
 }
 
@@ -36,10 +49,10 @@ export function useExecutions(id: number) {
   });
 }
 
-export function useRecentExecutions() {
+export function useRecentExecutions(limit = RECENT_EXECUTIONS_LIMIT) {
   return useQuery({
-    queryKey: keys.recentExecutions,
-    queryFn: () => api.listRecentExecutions(),
+    queryKey: keys.recentExecutions(limit),
+    queryFn: () => api.listRecentExecutions(limit),
   });
 }
 
