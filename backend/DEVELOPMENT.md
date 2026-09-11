@@ -205,7 +205,8 @@ values that differ between local/prod.
 ```
 
 Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the
-repo root) starts MySQL 9.4.0 only (seeded from `mysql/init.sql`), then run
+repo root) starts MySQL 9.4.0 empty — run `./gradlew :persistence:migrate` (or `npm run
+db:migrate`) to bring it to head, see "Database migrations" above — then run
 `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`,
 `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config).
 
@@ -218,9 +219,9 @@ one built from the repo-root `Dockerfile` (backend + built SPA under supervisord
 
 - Remote: `git@github.com:luiznaac/chameidor.git`, default branch `master`.
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
-- CI: `../.github/workflows/test.yml` has independent `backend` (this module: `./gradlew clean
+- CI: `../.github/workflows/ci.yml` has independent `backend` (this module: `./gradlew clean
   build`) and `frontend` jobs, on every push/PR to `master`.
-  `../.github/workflows/docker-image.yml` runs after that succeeds on `master` and publishes the
+  `../.github/workflows/docker-publish.yml` runs after that succeeds on `master` and publishes the
   combined Docker image.
 
 **Do not commit directly to `master`.** Always create a feature branch and open a PR,
