@@ -10,9 +10,17 @@ file only covers what's specific to chameidor.
 
 ```bash
 npm run dev         # vite dev server
-npm run typecheck    # tsc -b --noEmit — the only check that exists today, no lint/test yet
+npm run typecheck    # tsc -b --noEmit
+npm run lint          # biome check . (lint + format)
+npm run lint:fix      # biome check --write .
+npm run test          # vitest run — src/lib/** only, no DOM
+npm run check         # typecheck + lint + test — run this before opening a PR
 npm run build         # tsc -b && vite build
 ```
+
+`biome.json` formats with `lineEnding: "lf"` and `frontend/.gitattributes` pins the tree to
+LF, so Biome is identical on Windows and Linux — don't set `lineEnding: "crlf"` to quiet a
+Windows-only diff, it fails CI.
 
 ## Chameidor-specific pieces
 
