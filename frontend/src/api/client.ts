@@ -65,7 +65,7 @@ export const api = {
   listExecutions(id: number, limit = 50): Promise<TaskExecutionResponse[]> {
     return request(`/tasks/${id}/executions?limit=${limit}`);
   },
-  listRecentExecutions(limit = 20): Promise<TaskExecutionResponse[]> {
+  listRecentExecutions(limit = 200): Promise<TaskExecutionResponse[]> {
     return request(`/tasks/executions?limit=${limit}`);
   },
   listHistory(id: number): Promise<TaskHistoryResponse[]> {

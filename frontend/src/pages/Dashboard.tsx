@@ -9,7 +9,7 @@ import { ExecutionsTable } from "../components/ExecutionsTable.tsx";
 
 export function Dashboard() {
   const { data: tasks, isLoading, error } = useTasks();
-  const { data: recent } = useRecentExecutions();
+  const { data: recent } = useRecentExecutions(20);
 
   if (isLoading) return <p className="text-slate-400">Carregando…</p>;
   if (error) return <p className="text-exec-failure">Falha ao carregar: {String(error)}</p>;
