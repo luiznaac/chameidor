@@ -1,4 +1,4 @@
-# DEVELOPMENT.md — chameidor monorepo
+# AGENTS.md — chameidor monorepo
 
 Development guidelines for anyone (human, agent, or tool) working in this repository.
 
@@ -6,7 +6,7 @@ Two projects, one repo:
 
 - **`backend/`** — the Kotlin/Ktor + Spring-DI + Exposed task scheduler/executor.
   All backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture,
-  conventions and rules for evolving it are in [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) —
+  conventions and rules for evolving it are in [backend/AGENTS.md](backend/AGENTS.md) —
   read that before touching `backend/`.
 - **`frontend/`** — the React/Vite SPA. Commands run from `frontend/`
   (`npm --prefix frontend run <script>`). Details in
@@ -46,7 +46,7 @@ the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose
 is the MySQL-only compose for backend-only local runs. The schema comes from
 `backend/persistence/src/main/resources/db/migration/V*.sql`, applied by Flyway
 (`bin/migrate` in the image) from `deploy/entrypoint.sh` before the app starts —
-see [backend/DEVELOPMENT.md](backend/DEVELOPMENT.md) §7.
+see [backend/AGENTS.md](backend/AGENTS.md) §7.
 `.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` +
 `:v<run-number>` (a sequential build number, `github.run_number`) after the "CI" workflow
 succeeds on `master`.
@@ -54,6 +54,6 @@ succeeds on `master`.
 ## Related repositories
 
 Same monorepo shape (backend + Vite SPA, combined image) as
-[../shougong](../shougong/DEVELOPMENT.md). The backend shares its hexagonal
-architecture with [../portfolio-2](../portfolio-2/DEVELOPMENT.md) and the
-[../environments](../environments/DEVELOPMENT.md) kotlin scaffold.
+[../shougong](../shougong/AGENTS.md). The backend shares its hexagonal
+architecture with [../portfolio-2](../portfolio-2/AGENTS.md) and the
+[../environments](../environments/AGENTS.md) kotlin scaffold.

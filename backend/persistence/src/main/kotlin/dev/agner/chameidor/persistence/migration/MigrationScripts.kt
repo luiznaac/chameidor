@@ -17,7 +17,7 @@ const val MIGRATIONS_DIRECTORY = "src/main/resources/db/migration"
 // own `generateMigrationScript` entry point. A new *Table object must be added here.
 val allTables: Array<Table> = arrayOf(TaskTable, TaskHistoryTable, TaskExecutionTable)
 
-// Authoring half of the migration workflow (backend/CLAUDE.md §7). Diffs `allTables` against a
+// Authoring half of the migration workflow (backend/AGENTS.md). Diffs `allTables` against a
 // local database already migrated to head and writes the SQL that closes the gap into
 // db/migration/. Exposed only *generates* — Flyway applies. Always read the output before
 // committing it: the diff is mechanical and won't, for instance, know that a rename is a rename

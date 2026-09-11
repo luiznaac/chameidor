@@ -4,7 +4,7 @@ Monorepo for the self-hosted task scheduler/executor.
 
 | Path                     | What                                                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| [`backend/`](backend/)   | Kotlin/Ktor + Spring-DI + Exposed/MySQL service. See [backend/README.md](backend/README.md) and [backend/CLAUDE.md](backend/CLAUDE.md). |
+| [`backend/`](backend/)   | Kotlin/Ktor + Spring-DI + Exposed/MySQL service. See [backend/README.md](backend/README.md) and [backend/AGENTS.md](backend/AGENTS.md). |
 | [`frontend/`](frontend/) | React + Vite SPA — dashboard and task browser. See [frontend/README.md](frontend/README.md).         |
 
 The frontend's `src/api/types.ts` mirrors the backend's edge DTOs
