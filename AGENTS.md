@@ -34,7 +34,9 @@ fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run
 db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies
 and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes
 hooks by path (`^backend/` → `./gradlew detekt`, `^frontend/` → `npm run
-typecheck`).
+typecheck`). It also carries `no-commit-to-branch`, which refuses a commit made
+while `master` is checked out — the "don't commit to master" rule below is
+enforced here, not merely stated.
 
 ## Docker
 
