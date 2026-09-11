@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client.ts";
-import type {
-  OneTimeTaskCreation,
-  PeriodicTaskCreation,
-  TaskListFilter,
-} from "./types.ts";
+import type { OneTimeTaskCreation, PeriodicTaskCreation, TaskListFilter } from "./types.ts";
 
 export const keys = {
   tasks: (filter?: TaskListFilter) => ["tasks", filter ?? {}] as const,

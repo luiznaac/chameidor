@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import { useRecentExecutions, useTasks } from "../api/queries.ts";
 import type { TaskStatus } from "../api/types.ts";
-import { TASK_STATUSES, TASK_STATUS_META } from "../lib/taskStatus.ts";
-import { Panel } from "../components/Panel.tsx";
-import { HealthPanel } from "../components/HealthPanel.tsx";
-import { UpcomingExecutions } from "../components/UpcomingExecutions.tsx";
 import { ExecutionsTable } from "../components/ExecutionsTable.tsx";
+import { HealthPanel } from "../components/HealthPanel.tsx";
+import { Panel } from "../components/Panel.tsx";
+import { UpcomingExecutions } from "../components/UpcomingExecutions.tsx";
+import { TASK_STATUSES, TASK_STATUS_META } from "../lib/taskStatus.ts";
 
 export function Dashboard() {
   const { data: tasks, isLoading, error } = useTasks();
