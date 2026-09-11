@@ -4,12 +4,17 @@ import { formatDateTime, fromNow } from "../lib/format.ts";
 
 const PENDING: TaskResponse["status"][] = ["WAITING", "QUEUED"];
 
+type ScheduledTask = TaskResponse & { next_execution_at: string };
+
+function isScheduled(task: TaskResponse): task is ScheduledTask {
+  return task.next_execution_at != null && PENDING.includes(task.status);
+}
+
 export function UpcomingExecutions({ tasks }: { tasks: TaskResponse[] }) {
   const upcoming = tasks
-    .filter((t) => t.next_execution_at != null && PENDING.includes(t.status))
+    .filter(isScheduled)
     .sort(
-      (a, b) =>
-        new Date(a.next_execution_at!).getTime() - new Date(b.next_execution_at!).getTime(),
+      (a, b) => new Date(a.next_execution_at).getTime() - new Date(b.next_execution_at).getTime(),
     )
     .slice(0, 8);
 
@@ -30,9 +35,9 @@ export function UpcomingExecutions({ tasks }: { tasks: TaskResponse[] }) {
           </span>
           <span
             className="ml-auto shrink-0 text-slate-500"
-            title={formatDateTime(t.next_execution_at!)}
+            title={formatDateTime(t.next_execution_at)}
           >
-            {fromNow(t.next_execution_at!)}
+            {fromNow(t.next_execution_at)}
           </span>
         </li>
       ))}

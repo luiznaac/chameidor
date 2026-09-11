@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTasks } from "../api/queries.ts";
 import type { TaskListFilter, TaskStatus } from "../api/types.ts";
+import { StatusBadge } from "../components/StatusBadge.tsx";
 import { fromNow } from "../lib/format.ts";
 import { TASK_STATUSES, TASK_STATUS_META } from "../lib/taskStatus.ts";
-import { StatusBadge } from "../components/StatusBadge.tsx";
 
 function isStatus(v: string | null): v is TaskStatus {
   return v != null && (TASK_STATUSES as string[]).includes(v);

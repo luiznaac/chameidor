@@ -52,7 +52,7 @@ function query(filter: TaskListFilter): string {
 export const api = {
   // --- health ---
   health(): Promise<HealthCheckResult[]> {
-    return request(`/health`);
+    return request("/health");
   },
 
   // --- tasks (read) ---
@@ -74,14 +74,14 @@ export const api = {
 
   // --- tasks (write) ---
   createOneTimeTask(body: OneTimeTaskCreation, externalSystem: string): Promise<TaskResponse> {
-    return request(`/tasks/one-time`, {
+    return request("/tasks/one-time", {
       method: "POST",
       headers: { "X-External-System": externalSystem },
       body: JSON.stringify(body),
     });
   },
   createPeriodicTask(body: PeriodicTaskCreation, externalSystem: string): Promise<TaskResponse> {
-    return request(`/tasks/periodic`, {
+    return request("/tasks/periodic", {
       method: "POST",
       headers: { "X-External-System": externalSystem },
       body: JSON.stringify(body),

@@ -13,9 +13,7 @@ export function Layout() {
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
           <NavLink to="/" className="mr-3 flex items-center gap-2">
             <span className="text-xl">🦎</span>
-            <span className="text-sm font-semibold tracking-wide text-slate-300">
-              chameidor
-            </span>
+            <span className="text-sm font-semibold tracking-wide text-slate-300">chameidor</span>
           </NavLink>
           <nav className="flex items-center gap-1">
             <NavLink to="/" end className={linkClass}>

@@ -38,9 +38,7 @@ export function ExecutionsTable({
               <td className="py-2 pr-4">
                 <span
                   className={
-                    isExecutionSuccess(e.status)
-                      ? "text-exec-success"
-                      : "text-exec-failure"
+                    isExecutionSuccess(e.status) ? "text-exec-success" : "text-exec-failure"
                   }
                 >
                   {isExecutionSuccess(e.status) ? "Sucesso" : "Falha"}

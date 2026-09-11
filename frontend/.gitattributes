@@ -1,0 +1,3 @@
+# The frontend tree is stored as LF. Pin it so a Windows core.autocrlf=true
+# checkout doesn't hand CRLF to Biome, which formats with lineEnding: "lf".
+* text=auto eol=lf
