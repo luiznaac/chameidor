@@ -22,11 +22,6 @@ fields omitted, dates as ISO-8601 strings. Any change to a request/response DTO
 on one side must update the other **in the same commit** — that's the reason
 these two live in one repo.
 
-## Git workflow
-
-**Do not commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change. This applies to all contributors.
-
 ## Tooling
 
 Root `package.json` holds script shims only (`npm run be:build`, `npm run
@@ -34,9 +29,8 @@ fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run
 db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies
 and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes
 hooks by path (`^backend/` → `./gradlew detekt`, `^frontend/` → `npm run
-typecheck`). It also carries `no-commit-to-branch`, which refuses a commit made
-while `master` is checked out — the "don't commit to master" rule below is
-enforced here, not merely stated.
+typecheck`). It also carries `no-commit-to-branch` — the git/PR conventions are
+enforced there, not merely stated (see `salgadinhos/global/AGENTS.md`).
 
 ## Docker
 
