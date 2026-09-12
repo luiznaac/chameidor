@@ -186,9 +186,6 @@ one built from the repo-root `Dockerfile` (backend + built SPA under supervisord
   `../.github/workflows/docker-publish.yml` runs after that succeeds on `master` and publishes the
   combined Docker image.
 
-**Do not commit directly to `master`.** Always create a feature branch and open a PR,
-even for a small or "obviously safe" change — no exceptions.
-
 ## Related repositories
 
 Generated from [environments/kotlin](../../environments/AGENTS.md), and shares the same

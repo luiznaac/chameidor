@@ -35,7 +35,4 @@ Windows-only diff, it fails CI.
   chameidor-specific; `Layout`/`Panel` are the shared chrome primitives (same idea as every
   sibling frontend's `Layout`/`Panel`).
 
-## Git
-
-**Do not commit directly to `master`.** Always create a feature branch and open a PR, even for a
-small or "obviously safe" change. This applies to all contributors.
+Git/PR conventions: see `salgadinhos/global/AGENTS.md`.
