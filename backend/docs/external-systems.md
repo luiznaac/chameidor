@@ -20,16 +20,39 @@ Authorization: Bearer <token>
 - Scope is all-or-nothing today. The single `AuthorizationService.authorize(caller, target,
   credential)` seam in `usecase/auth/` is where a future centralized authz provider plugs
   in without changing the wire.
-- The legacy `X-External-System` header is not a credential: when present it may only
-  accompany a Bearer token, and it must match the token's system.
+- The legacy `X-External-System` header is a **deprecated alias**: without a token it
+  authenticates by name alone — the use is logged at WARNING — until every caller has
+  migrated to Bearer. Alongside a token it must match the token's system. New consumers
+  never use the alias; see [Removing the alias](#removing-the-alias).
 
 Errors are minimal and JSON:
 
 | Status | Body error | When |
 |---|---|---|
-| `401` | `missing bearer credential` | No credential, or a malformed/non-Bearer `Authorization` header |
-| `401` | `invalid bearer credential` | Unknown token, or the `X-External-System` claim conflicts with it |
-| `403` | `inactive external system` | Token belongs to a system with `active = FALSE` |
+| `401` | `missing bearer credential` | No credential and no alias — including a malformed/non-Bearer `Authorization` header |
+| `401` | `invalid bearer credential` | Unknown token, a standalone alias naming an unregistered system, or an alias conflicting with the token |
+| `403` | `inactive external system` | Token or alias belongs to a system with `active = FALSE` |
+
+## Removing the alias
+
+`X-External-System` is a migration artifact, not part of the contract. It goes away once
+every caller sends Bearer:
+
+1. portfolio-2's `ChameidorGateway` sends `Authorization: Bearer` (the [#16][16] effort).
+2. valoab sends Bearer — validated end to end by the canary [#19][19].
+3. A chameidor PR then deletes the alias path: `AuthorizationService` stops resolving the
+   header by name, the header reverts to a claim that may only accompany a matching token
+   (standalone it is a `401 missing bearer credential`), and the tests and docs here drop
+   the alias.
+
+The SPA's dormant task-creation client (`frontend/src/api/client.ts`) still sends the header;
+the form that will use it is ComingSoon, and it must use Bearer — never the alias — when built.
+
+Tracked in [#23][23].
+
+[16]: https://github.com/luiznaac/chameidor/issues/16
+[19]: https://github.com/luiznaac/chameidor/issues/19
+[23]: https://github.com/luiznaac/chameidor/issues/23
 
 ## The registry
 

@@ -34,8 +34,10 @@ token was issued per app and registered in chameidor's `external_systems` allowl
 lets operators rotate or deactivate a system with a plain `UPDATE`. The same convention works in
 the other direction: the callback to a consumer carries chameidor's own token
 (`CHAMEIDOR_TOKEN`) plus the task's creator and id in the `X-External-System` and
-`X-Chameidor-Task-Id` headers, and the consumer validates the Bearer. The registry, provisioning
-and error contract live in [docs/external-systems.md](docs/external-systems.md).
+`X-Chameidor-Task-Id` headers, and the consumer validates the Bearer. The registry, provisioning,
+error contract, the deprecated `X-External-System` alias (accepted alone with a WARNING until
+every caller migrates) and its removal plan live in
+[docs/external-systems.md](docs/external-systems.md).
 
 ## Using it
 

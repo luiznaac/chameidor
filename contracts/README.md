@@ -13,6 +13,10 @@ Headers:
 - `Content-Type: application/json`
 - `Authorization: Bearer <token>` (required) — the token resolves to the registered system,
   whose name is stored as `created_by`.
+- `X-External-System: <name>` — deprecated alias, accepted without a token during the
+  migration window (the use is logged at WARNING); alongside a token it must match the
+  token's system. New consumers never use it — it will be removed, see
+  [the registry doc](../backend/docs/external-systems.md#removing-the-alias).
 
 Request (fixture: [`tasks-one-time-request.json`](tasks-one-time-request.json)):
 
@@ -58,7 +62,8 @@ When a task runs, chameidor sends `POST http://{host}{endpoint}`:
   unknown request fields are ignored.
 - Each consumer pins its own copy of the fixtures it depends on and tests its real payload
   against them: a breaking change on this side fails the consumer's CI when the pin is updated.
-- Registration requires the `Authorization: Bearer` token. The callback carries chameidor's own
-  Bearer plus the identifying headers above — the earlier "no auth validation for now" note for
-  the callback is **superseded** by the ecosystem's consolidated interop decision (§5.3): the
-  Bearer is symmetric and the consumer validates it from now on.
+- Registration requires the `Authorization: Bearer` token; the `X-External-System` alias is
+  temporary and will be removed, so consumers must not build on it. The callback carries
+  chameidor's own Bearer plus the identifying headers above — the earlier "no auth validation
+  for now" note for the callback is **superseded** by the ecosystem's consolidated interop
+  decision (§5.3): the Bearer is symmetric and the consumer validates it from now on.
