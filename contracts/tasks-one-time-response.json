@@ -1,0 +1,5 @@
+{
+  "id": 1,
+  "host": "portfolio:8080",
+  "endpoint": "/consolidations/BOND/1"
+}

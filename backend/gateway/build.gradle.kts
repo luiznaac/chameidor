@@ -9,4 +9,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.jackson)
+
+    testImplementation(libs.bundles.testDependencies)
+    testImplementation(libs.ktor.client.mock)
 }
