@@ -29,7 +29,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.message ?? body.detail ?? detail;
+      detail = body.error ?? body.message ?? body.detail ?? detail;
     } catch {
       /* non-JSON body (Ktor's default error pages) */
     }

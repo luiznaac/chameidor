@@ -15,8 +15,12 @@ chameidor is a task scheduler/executor. Clients register a **one-time** or **per
 task over HTTP, giving a target host/endpoint and a payload. chameidor persists the task, and a
 background loop periodically polls for tasks that are due, calls the target endpoint with the
 stored payload, and records the outcome (success/failure, next execution time for periodic
-tasks). Every registration must carry an `X-External-System` header identifying the caller — this
-is stored as `createdBy` and lets multiple systems share one chameidor instance safely.
+tasks). Every registration is authenticated with an opaque `Authorization: Bearer` token whose
+SHA-256 digest is registered in the `external_systems` table — the resolved system name is
+stored as `createdBy`, so multiple systems share one chameidor instance safely. Auth is decided
+in exactly one place, the `authorize(caller, target, credential)` seam of
+`usecase/auth/AuthorizationService`; the registry and provisioning live in
+[docs/external-systems.md](docs/external-systems.md).
 
 ## Architecture
 
@@ -30,9 +34,10 @@ application  →  http-api  →  usecase  ←  persistence
 
 - **`usecase`** — the core. Domain models (`Task`, `TaskCreation`, `TaskStatus`), repository
   *interfaces* (`ITaskRepository`, `ITaskExecutionRepository`), services (`TaskService`,
-  `TaskExecutor`), health-check abstractions, JSON/date serializers. Has zero dependency on Ktor,
-  Spring web, or Exposed — it only depends on Spring for `@Component`/`@Value` DI wiring and on
-  `kotlinx-coroutines`/`kotlinx-datetime`. Also owns a `testFixtures` source set
+  `TaskExecutor`), health-check abstractions, the `auth/` seam (`AuthorizationService`,
+  `ExternalSystem`, `IExternalSystemRepository`), JSON/date serializers. Has zero dependency on
+  Ktor, Spring web, or Exposed — it only depends on Spring for `@Component`/`@Value` DI wiring and
+  on `kotlinx-coroutines`/`kotlinx-datetime`. Also owns a `testFixtures` source set
   (`BasicHelpers.kt`) for shared test builders consumed by other modules.
 - **`persistence`** — implements the `usecase` repository interfaces against MySQL via **Exposed**
   (not JPA/Hibernate/Ebean). One `Table` object + one `Entity` + one `@Component` repository per

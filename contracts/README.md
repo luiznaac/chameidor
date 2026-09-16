@@ -11,7 +11,8 @@ chameidor's own tests, which assert the real request/response payloads against t
 Headers:
 
 - `Content-Type: application/json`
-- `X-External-System: <caller>` (required) — caller identity, stored as `created_by`.
+- `Authorization: Bearer <token>` (required) — the token resolves to the registered system,
+  whose name is stored as `created_by`.
 
 Request (fixture: [`tasks-one-time-request.json`](tasks-one-time-request.json)):
 
@@ -48,6 +49,6 @@ When a task runs, chameidor sends `POST http://{host}{endpoint}`:
   unknown request fields are ignored.
 - Each consumer pins its own copy of the fixtures it depends on and tests its real payload
   against them: a breaking change on this side fails the consumer's CI when the pin is updated.
-- Callback headers and auth are planned and will be additive: creator identity, task id, and
-  bearer-token auth in both directions. Today `X-External-System` is the only credential (on
-  registration) and the callback request carries no identifying headers.
+- Registration requires the `Authorization: Bearer` token. Callback headers and auth (creator
+  identity, task id, bearer token) are planned and will be additive; the callback request
+  currently carries no identifying headers.

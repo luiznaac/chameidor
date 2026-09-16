@@ -24,7 +24,7 @@ Windows-only diff, it fails CI.
 
 ## Chameidor-specific pieces
 
-- **`api/types.ts` mirrors `TaskResponse`/`TaskCreation`/`HealthCheckResult`** from
+- **`api/types.ts` mirrors `TaskResponse`/`TaskCreation`/`HealthCheckResult`/`ErrorResponse`** from
   `backend/http-api/.../controller/`, snake_case + null-omitted per `JsonMapper` — see the root
   [`AGENTS.md`](../AGENTS.md)'s cross-cutting rule. `TaskStatus`/`TaskType` are the two enums to
   keep in sync if the backend adds a value.
