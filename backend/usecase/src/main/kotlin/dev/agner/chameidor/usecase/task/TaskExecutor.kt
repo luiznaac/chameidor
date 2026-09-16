@@ -36,14 +36,14 @@ class TaskExecutor(
         }
     }
 
-    private suspend fun runTask(task: Task) = with(task) {
+    private suspend fun runTask(task: Task): TaskExecutionResult {
         val exec = measureTimedValue {
             runCatching {
                 callClient.makeCall(task)
             }
         }
 
-        if (exec.value.isSuccess) {
+        return if (exec.value.isSuccess) {
             TaskExecutionResult.Success(exec.duration, exec.value.getOrNull())
         } else {
             TaskExecutionResult.Failure(exec.duration, exec.value.exceptionOrNull()!!.message ?: "Unknown error")

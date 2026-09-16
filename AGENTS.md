@@ -16,7 +16,8 @@ Two projects, one repo:
 
 `frontend/src/api/types.ts` is a hand-maintained mirror of the edge DTOs in
 `backend/http-api/src/main/kotlin/dev/agner/chameidor/httpapi/controller/`
-(`TaskResponse.kt` for the read endpoints, `TaskCreation` / `HealthCheckResult`
+(`TaskResponse.kt` for the read endpoints, `TaskRegistrationResponse.kt` for the
+registration responses, `TaskCreation` / `HealthCheckResult`
 for the rest, `ErrorResponse.kt` for error bodies). They are serialized by
 `JsonMapper` — snake_case keys, null
 fields omitted, dates as ISO-8601 strings. Any change to a request/response DTO

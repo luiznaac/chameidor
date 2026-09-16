@@ -79,6 +79,16 @@ class TaskCallbackAuthenticationTest : StringSpec({
             .body<List<TaskExecutionResponse>>()
             .single()
 
+    fun verifyCallbackHeaders(taskId: Int) = HttpMockService.verify(
+        method = RequestMethod.POST,
+        endpoint = callbackEndpoint,
+        headers = mapOf(
+            HttpHeaders.Authorization to "Bearer $chameidorToken",
+            EXTERNAL_SYSTEM_HEADER to systemName,
+            TASK_ID_HEADER to taskId.toString(),
+        ),
+    )
+
     "a consumer that validates chameidor's bearer accepts the callback end to end" {
         registerSystem()
         HttpMockService.configureResponses {
@@ -97,15 +107,7 @@ class TaskCallbackAuthenticationTest : StringSpec({
         awaitTask(taskId)
 
         singleExecution(taskId).status shouldBe "SUCCESS"
-        HttpMockService.verify(
-            method = RequestMethod.POST,
-            endpoint = callbackEndpoint,
-            headers = mapOf(
-                HttpHeaders.Authorization to "Bearer $chameidorToken",
-                EXTERNAL_SYSTEM_HEADER to systemName,
-                TASK_ID_HEADER to taskId.toString(),
-            ),
-        )
+        verifyCallbackHeaders(taskId)
     }
 
     "a consumer that refuses chameidor's bearer makes the run fail, not silently succeed" {
@@ -124,5 +126,6 @@ class TaskCallbackAuthenticationTest : StringSpec({
         awaitTask(taskId)
 
         singleExecution(taskId).status shouldBe "FAILURE"
+        verifyCallbackHeaders(taskId)
     }
 })
