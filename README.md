@@ -11,6 +11,10 @@ The frontend's `src/api/types.ts` mirrors the backend's edge DTOs
 (`http-api/.../controller/TaskResponse.kt` et al.); keep them in sync in the same
 change — that's the reason these two live in one repo.
 
+The wire contract other apps integrate against — request/response fixtures for task
+registration and the callback — lives in [`contracts/`](contracts/README.md); each
+consumer pins its own copy and tests its real payload against it.
+
 ## Dev
 
 ```bash

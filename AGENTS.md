@@ -20,7 +20,10 @@ Two projects, one repo:
 for the rest). They are serialized by `JsonMapper` — snake_case keys, null
 fields omitted, dates as ISO-8601 strings. Any change to a request/response DTO
 on one side must update the other **in the same commit** — that's the reason
-these two live in one repo.
+these two live in one repo. The same DTOs are published as wire-contract
+fixtures in [`contracts/`](contracts/README.md) for consuming apps; a DTO change
+updates the fixtures in the same commit, and chameidor's contract tests keep the
+fixtures matching the real payloads.
 
 ## Tooling
 

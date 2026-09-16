@@ -58,7 +58,7 @@ The service listens on port `8080`.
 curl -X POST http://localhost:8080/tasks/one-time \
   -H "Content-Type: application/json" \
   -H "X-External-System: my-app" \
-  -d '{ "host": "https://example.com", "endpoint": "/do-thing", "data": {"key": "value"} }'
+  -d '{ "host": "example.com", "endpoint": "/do-thing", "data": {"key": "value"} }'
 ```
 
 ### Register a periodic (cron) task
@@ -67,11 +67,12 @@ curl -X POST http://localhost:8080/tasks/one-time \
 curl -X POST http://localhost:8080/tasks/periodic \
   -H "Content-Type: application/json" \
   -H "X-External-System: my-app" \
-  -d '{ "host": "https://example.com", "endpoint": "/do-thing", "data": {"key": "value"}, "cron": "*/10 * * * *" }'
+  -d '{ "host": "example.com", "endpoint": "/do-thing", "data": {"key": "value"}, "cron": "*/10 * * * *" }'
 ```
 
-chameidor will call `POST https://example.com/do-thing` with the given payload according to the
-schedule, and keep retrying it going forward for periodic tasks.
+`host` is a bare authority — chameidor prepends `http://`. It will call `POST
+http://example.com/do-thing` with the given payload according to the schedule, and keep retrying
+it going forward for periodic tasks.
 
 ### Inspect tasks
 
