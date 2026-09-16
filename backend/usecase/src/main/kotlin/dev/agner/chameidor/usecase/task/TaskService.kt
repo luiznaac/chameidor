@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.Clock
@@ -25,13 +26,19 @@ class TaskService(
     private val repository: ITaskRepository,
     private val taskExecutor: TaskExecutor,
     @param:Value("\${enqueue.period}") private val enqueuePeriod: Long,
-) {
+) : DisposableBean {
 
     private val logger = logger()
     private val globalJob: Job
 
     init {
         globalJob = GlobalScope.launch { execute() }
+    }
+
+    // The loop must not outlive the context that owns it — a stale loop would keep polling and
+    // executing tasks with beans (HTTP client, clock) that were already shut down with it.
+    override fun destroy() {
+        globalJob.cancel()
     }
 
     suspend fun execute() {

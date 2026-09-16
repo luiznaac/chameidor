@@ -20,7 +20,10 @@ SHA-256 digest is registered in the `external_systems` table — the resolved sy
 stored as `createdBy`, so multiple systems share one chameidor instance safely. Auth is decided
 in exactly one place, the `authorize(caller, target, credential)` seam of
 `usecase/auth/AuthorizationService`; the registry and provisioning live in
-[docs/external-systems.md](docs/external-systems.md).
+[docs/external-systems.md](docs/external-systems.md). Callbacks are authenticated symmetrically:
+chameidor presents its own token (`chameidor.token`) as `Authorization: Bearer` and sends the
+task's creator and id as the `X-External-System`/`X-Chameidor-Task-Id` headers, both decided in
+`gateway/call/CallGateway.kt`.
 
 ## Architecture
 
@@ -158,6 +161,7 @@ changes without a matching migration (or vice versa), this test fails.
 | `ktor.wait` | fixed `true` | blocks main thread on the embedded server |
 | `mysql.host` / `mysql.user` / `mysql.password` | `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` | required env vars, no defaults |
 | `enqueue.period` | `ENQUEUE_TASKS_PERIOD` | defaults to `10` (seconds) if unset |
+| `chameidor.token` | `CHAMEIDOR_TOKEN` | required, no default; chameidor's own identity token, presented as `Authorization: Bearer` on callbacks to consumers (see [docs/external-systems.md](docs/external-systems.md)) |
 
 Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setting — don't hardcode
 values that differ between local/prod.

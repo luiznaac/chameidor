@@ -7,6 +7,7 @@ import dev.agner.chameidor.integrationTest.helpers.getBean
 import dev.agner.chameidor.persistence.auth.ExternalSystemTable
 import dev.agner.chameidor.usecase.auth.AuthorizationResult
 import dev.agner.chameidor.usecase.auth.TokenHasher
+import dev.agner.chameidor.usecase.task.EXTERNAL_SYSTEM_HEADER
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.HttpClient
@@ -66,7 +67,7 @@ class TaskRegistrationAuthorizationTest : StringSpec({
         getBean<HttpClient>().post("http://localhost:8080/tasks/one-time") {
             contentType(ContentType.Application.Json)
             authorization?.let { header(HttpHeaders.Authorization, it) }
-            caller?.let { header("X-External-System", it) }
+            caller?.let { header(EXTERNAL_SYSTEM_HEADER, it) }
             setBody(mapOf("host" to "http://localhost:9", "endpoint" to "/hook"))
         }
 

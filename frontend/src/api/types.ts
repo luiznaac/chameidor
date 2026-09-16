@@ -1,7 +1,7 @@
 // Mirrors chameidor's http-api edge DTOs
-// (backend/http-api/.../controller/TaskResponse.kt and ErrorResponse.kt) plus
-// the request bodies accepted by TaskController and the HealthCheckResult it
-// serialises. Keep both sides in sync in the same commit.
+// (backend/http-api/.../controller/*.kt) plus the request bodies accepted by
+// TaskController and the HealthCheckResult it serialises. Keep both sides in
+// sync in the same commit.
 
 export type TaskStatus = "WAITING" | "QUEUED" | "EXECUTING" | "EXECUTED";
 export type TaskType = "one_time" | "periodic";
@@ -34,6 +34,16 @@ export interface TaskHistoryResponse {
   executed_at: string | null;
   next_execution_at: string | null;
   created_at: string;
+}
+
+// Body of the 201 responses of POST /tasks/one-time and /tasks/periodic — the
+// task as registered. Null fields are omitted on the wire.
+export interface TaskRegistrationResponse {
+  id: number;
+  host: string;
+  endpoint: string;
+  data?: unknown;
+  cron?: string; // present iff the task is periodic
 }
 
 // One entry of GET /health — the JSON shape of usecase/health/HealthCheckResult.
