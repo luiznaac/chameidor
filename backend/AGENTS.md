@@ -19,8 +19,9 @@ tasks). Every registration is authenticated with an opaque `Authorization: Beare
 SHA-256 digest is registered in the `external_systems` table — the resolved system name is
 stored as `createdBy`, so multiple systems share one chameidor instance safely. Auth is decided
 in exactly one place, the `authorize(caller, target, credential)` seam of
-`usecase/auth/AuthorizationService`; the registry and provisioning live in
-[docs/external-systems.md](docs/external-systems.md).
+`usecase/auth/AuthorizationService`; the registry, provisioning, the deprecated
+`X-External-System` alias (accepted alone with a WARNING during the migration window) and
+its removal plan live in [docs/external-systems.md](docs/external-systems.md).
 
 ## Architecture
 

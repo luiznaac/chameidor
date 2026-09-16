@@ -14,4 +14,8 @@ class ExternalSystemRepository : IExternalSystemRepository {
             .firstOrNull()
             ?.toModel()
     }
+
+    override suspend fun findByName(name: String): ExternalSystem? = transaction {
+        ExternalSystemEntity.findById(name)?.toModel()
+    }
 }

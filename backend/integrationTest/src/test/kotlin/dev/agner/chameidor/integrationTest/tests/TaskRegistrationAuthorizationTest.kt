@@ -70,6 +70,8 @@ class TaskRegistrationAuthorizationTest : StringSpec({
             setBody(mapOf("host" to "http://localhost:9", "endpoint" to "/hook"))
         }
 
+    suspend fun HttpResponse.createdTaskId() = (body<Map<String, Any>>()["id"] as Number).toInt()
+
     "rejects missing, malformed and unknown credentials with a 401 error body" {
         registerOneTime().apply {
             status shouldBe HttpStatusCode.Unauthorized
@@ -107,8 +109,9 @@ class TaskRegistrationAuthorizationTest : StringSpec({
         val response = registerOneTime(authorization = "Bearer $token")
         response.status shouldBe HttpStatusCode.Created
 
-        val id = (response.body<Map<String, Any>>()["id"] as Number).toInt()
-        val task = getBean<HttpClient>().get("http://localhost:8080/tasks/$id").body<TaskResponse>()
+        val task = getBean<HttpClient>()
+            .get("http://localhost:8080/tasks/${response.createdTaskId()}")
+            .body<TaskResponse>()
         task.createdBy shouldBe systemName
 
         registerOneTime(authorization = "Bearer $token", caller = systemName).status shouldBe HttpStatusCode.Created
@@ -130,6 +133,34 @@ class TaskRegistrationAuthorizationTest : StringSpec({
 
         deactivate()
         registerOneTime(authorization = "Bearer $rotatedToken").apply {
+            status shouldBe HttpStatusCode.Forbidden
+            body<ErrorResponse>() shouldBe ErrorResponse(AuthorizationResult.INACTIVE_SYSTEM)
+        }
+    }
+
+    "accepts the deprecated X-External-System alias alone and registers under its name" {
+        register()
+
+        val response = registerOneTime(caller = systemName)
+        response.status shouldBe HttpStatusCode.Created
+
+        val task = getBean<HttpClient>()
+            .get("http://localhost:8080/tasks/${response.createdTaskId()}")
+            .body<TaskResponse>()
+        task.createdBy shouldBe systemName
+    }
+
+    "rejects an alias for an unregistered system" {
+        registerOneTime(caller = "unknown-system").apply {
+            status shouldBe HttpStatusCode.Unauthorized
+            body<ErrorResponse>() shouldBe ErrorResponse(AuthorizationResult.INVALID_CREDENTIAL)
+        }
+    }
+
+    "forbids an inactive system reached through the alias" {
+        register(active = false)
+
+        registerOneTime(caller = systemName).apply {
             status shouldBe HttpStatusCode.Forbidden
             body<ErrorResponse>() shouldBe ErrorResponse(AuthorizationResult.INACTIVE_SYSTEM)
         }
