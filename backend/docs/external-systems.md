@@ -70,6 +70,46 @@ Deactivate a system:
 UPDATE external_systems SET active = FALSE WHERE name = 'valoab';
 ```
 
+## The callback (chameidor → consumers)
+
+Auth is **symmetric**: when a task runs, chameidor presents its own identity token to the
+consumer as `Authorization: Bearer`, generated with the same convention as every app token
+(prefix `chameidor-`, opacity, ≥32 characters of entropy). It travels in `CHAMEIDOR_TOKEN`,
+which is **required** — the app refuses to boot without it, and it never gets a real default in
+code.
+
+```
+POST http://{task.host}{task.endpoint}
+Authorization: Bearer <CHAMEIDOR_TOKEN>
+X-External-System: valoab
+X-Chameidor-Task-Id: 42
+```
+
+- Each consumer keeps only the token's SHA-256 in its own registry — the same shape as this
+  one — and validates `Authorization` on every callback. A refused credential means the task
+  is recorded as a failure; it does not silently succeed.
+- `X-External-System` is the system that registered the task (its `created_by`), **not** the
+  caller's identity: under the deprecated-alias rule, consumers must not authenticate by it.
+- The earlier "no auth validation for now" note for the callback is superseded by the
+  ecosystem's consolidated interop decision (§5.3) — see
+  [contracts/README.md](../../contracts/README.md#callback-chameidor--consumer) for the wire.
+
+Provision it out of band, like any app token (`chameidor` is the name a consumer registers):
+
+```bash
+echo "chameidor-$(openssl rand -base64 32)"
+```
+
+```sql
+-- On each consumer's registry, not in chameidor's:
+INSERT INTO external_systems (name, token_hash, active)
+VALUES ('chameidor', SHA2('<token>', 256), TRUE);
+```
+
+Local development uses the canonical fixture `dev-chameidor-fixture-token` — chameidor's own
+`application-test.yaml`, the root `docker-compose.yml` and the IntelliJ run configuration seed
+it; a consumer validates its hash the same way it does for real tokens.
+
 ## Local development
 
 Fixture literals follow the canonical `dev-<app>-<suffix>` shape (e.g.

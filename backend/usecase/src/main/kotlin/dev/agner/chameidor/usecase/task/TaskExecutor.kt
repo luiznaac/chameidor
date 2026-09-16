@@ -39,7 +39,7 @@ class TaskExecutor(
     private suspend fun runTask(task: Task) = with(task) {
         val exec = measureTimedValue {
             runCatching {
-                callClient.makeCall(host, endpoint, data)
+                callClient.makeCall(task)
             }
         }
 

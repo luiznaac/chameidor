@@ -5,6 +5,7 @@ import type {
   TaskExecutionResponse,
   TaskHistoryResponse,
   TaskListFilter,
+  TaskRegistrationResponse,
   TaskResponse,
 } from "./types.ts";
 
@@ -73,14 +74,20 @@ export const api = {
   },
 
   // --- tasks (write) ---
-  createOneTimeTask(body: OneTimeTaskCreation, externalSystem: string): Promise<TaskResponse> {
+  createOneTimeTask(
+    body: OneTimeTaskCreation,
+    externalSystem: string,
+  ): Promise<TaskRegistrationResponse> {
     return request("/tasks/one-time", {
       method: "POST",
       headers: { "X-External-System": externalSystem },
       body: JSON.stringify(body),
     });
   },
-  createPeriodicTask(body: PeriodicTaskCreation, externalSystem: string): Promise<TaskResponse> {
+  createPeriodicTask(
+    body: PeriodicTaskCreation,
+    externalSystem: string,
+  ): Promise<TaskRegistrationResponse> {
     return request("/tasks/periodic", {
       method: "POST",
       headers: { "X-External-System": externalSystem },

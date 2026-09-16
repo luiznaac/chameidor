@@ -2,7 +2,10 @@ package dev.agner.chameidor.integrationTest.config
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.http.RequestMethod
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import dev.agner.chameidor.usecase.configuration.JsonMapper
 
 object HttpMockService {
@@ -18,6 +21,7 @@ object HttpMockService {
         lateinit var method: RequestMethod
         lateinit var endpoint: String
         var queryParams: Map<String, String> = emptyMap()
+        var headers: Map<String, String> = emptyMap()
         var httpStatus: Int = 200
         var payload: Any = emptyMap<String, String>()
     }
@@ -35,35 +39,27 @@ object HttpMockService {
             .apply { scope() }
             .responses
             .forEach { configuration ->
-                mockFor(
-                    method = configuration.method,
-                    endpoint = configuration.endpoint,
-                    queryParams = configuration.queryParams,
-                    httpStatus = configuration.httpStatus,
-                    desiredResponsePayload = configuration.payload,
+                server.stubFor(
+                    WireMock.request(configuration.method.value(), urlPathMatching(configuration.endpoint))
+                        .apply {
+                            configuration.queryParams.forEach { (key, value) -> withQueryParam(key, equalTo(value)) }
+                            configuration.headers.forEach { (key, value) -> withHeader(key, equalTo(value)) }
+                        }
+                        .willReturn(
+                            WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withStatus(configuration.httpStatus)
+                                .withBody(mapper.writeValueAsBytes(configuration.payload)),
+                        ),
                 )
             }
     }
 
-    private fun mockFor(
-        method: RequestMethod,
-        endpoint: String,
-        queryParams: Map<String, String>,
-        httpStatus: Int,
-        desiredResponsePayload: Any,
-    ) {
-        server.stubFor(
-            WireMock.request(method.value(), WireMock.urlPathMatching(endpoint))
-                .apply {
-                    queryParams.forEach { (key, value) -> withQueryParam(key, WireMock.equalTo(value)) }
-                }
-                .willReturn(
-                    WireMock.aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(httpStatus)
-                        .withBody(mapper.writeValueAsBytes(desiredResponsePayload)),
-                ),
-        )
+    fun verify(method: RequestMethod, endpoint: String, headers: Map<String, String>) {
+        val pattern = RequestPatternBuilder.newRequestPattern(method, urlPathMatching(endpoint))
+            .apply { headers.forEach { (key, value) -> withHeader(key, equalTo(value)) } }
+
+        server.verify(pattern)
     }
 
     fun clearMocks() {
