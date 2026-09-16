@@ -40,6 +40,15 @@ to the stored task (fixture: [`tasks-periodic-response.json`](tasks-periodic-res
 
 When a task runs, chameidor sends `POST http://{host}{endpoint}`:
 
+- Headers:
+  - `Authorization: Bearer <token>` — **chameidor's own identity**, not the task creator's.
+    The consumer validates it against its own registry of caller tokens (same convention
+    as chameidor's; see
+    [backend/docs/external-systems.md](../backend/docs/external-systems.md#the-callback-chameidor--consumers))
+    and refuses unknown credentials.
+  - `X-External-System: <name>` — the system that registered the task (its `created_by`).
+    Informational: the consumer must not authenticate by it.
+  - `X-Chameidor-Task-Id: <id>` — the task's id in chameidor.
 - Body: the registered `data`, exactly as sent — no envelope, no task metadata. When the task
   has no `data`, the request has no body. [`callback-request.json`](callback-request.json) is
   the body of a task registered with `"data": {"product_id": 1}`.
@@ -54,6 +63,7 @@ When a task runs, chameidor sends `POST http://{host}{endpoint}`:
 - Each consumer pins its own copy of the fixtures it depends on and tests its real payload
   against them: a breaking change on this side fails the consumer's CI when the pin is updated.
 - Registration requires the `Authorization: Bearer` token; the `X-External-System` alias is
-  temporary and will be removed, so consumers must not build on it. Callback headers and auth
-  (creator identity, task id, bearer token) are planned and will be additive; the callback
-  request currently carries no identifying headers.
+  temporary and will be removed, so consumers must not build on it. The callback carries
+  chameidor's own Bearer plus the identifying headers above — the earlier "no auth validation
+  for now" note for the callback is **superseded** by the ecosystem's consolidated interop
+  decision (§5.3): the Bearer is symmetric and the consumer validates it from now on.

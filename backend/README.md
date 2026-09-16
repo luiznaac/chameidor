@@ -31,7 +31,10 @@ back when it's time.
 Task registration is authenticated: every request carries an `Authorization: Bearer <token>` whose
 token was issued per app and registered in chameidor's `external_systems` allowlist. The token
 *is* the identity — chameidor stores only its SHA-256 digest, derives `created_by` from it, and
-lets operators rotate or deactivate a system with a plain `UPDATE`. The registry, provisioning,
+lets operators rotate or deactivate a system with a plain `UPDATE`. The same convention works in
+the other direction: the callback to a consumer carries chameidor's own token
+(`CHAMEIDOR_TOKEN`) plus the task's creator and id in the `X-External-System` and
+`X-Chameidor-Task-Id` headers, and the consumer validates the Bearer. The registry, provisioning,
 error contract, the deprecated `X-External-System` alias (accepted alone with a WARNING until
 every caller migrates) and its removal plan live in
 [docs/external-systems.md](docs/external-systems.md).
@@ -53,6 +56,7 @@ environment variables set:
 MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASSWORD=
+CHAMEIDOR_TOKEN=dev-chameidor-fixture-token
 ```
 
 The service listens on port `8080`. Before you can register tasks you need one entry in the

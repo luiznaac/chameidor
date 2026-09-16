@@ -3,6 +3,7 @@ package dev.agner.chameidor.httpapi.controller
 import dev.agner.chameidor.usecase.auth.AuthorizationResult
 import dev.agner.chameidor.usecase.auth.AuthorizationService
 import dev.agner.chameidor.usecase.auth.ExternalSystem
+import dev.agner.chameidor.usecase.task.EXTERNAL_SYSTEM_HEADER
 import dev.agner.chameidor.usecase.task.TaskCreation.OneTimeTaskCreation
 import dev.agner.chameidor.usecase.task.TaskCreation.PeriodicTaskCreation
 import dev.agner.chameidor.usecase.task.TaskFilter
@@ -21,7 +22,6 @@ import io.ktor.server.routing.route
 import org.springframework.stereotype.Component
 
 private const val DEFAULT_EXECUTIONS_LIMIT = 20
-private const val EXTERNAL_SYSTEM_HEADER = "X-External-System"
 
 @Component
 class TaskController(
@@ -35,14 +35,20 @@ class TaskController(
             post("/periodic") {
                 call.authorizedSystem()?.let { system ->
                     val payload = call.receive<PeriodicTaskCreation>()
-                    call.respond(HttpStatusCode.Created, taskService.register(payload, system.name))
+                    call.respond(
+                        HttpStatusCode.Created,
+                        TaskRegistrationResponse.from(taskService.register(payload, system.name)),
+                    )
                 }
             }
 
             post("/one-time") {
                 call.authorizedSystem()?.let { system ->
                     val payload = call.receive<OneTimeTaskCreation>()
-                    call.respond(HttpStatusCode.Created, taskService.register(payload, system.name))
+                    call.respond(
+                        HttpStatusCode.Created,
+                        TaskRegistrationResponse.from(taskService.register(payload, system.name)),
+                    )
                 }
             }
 

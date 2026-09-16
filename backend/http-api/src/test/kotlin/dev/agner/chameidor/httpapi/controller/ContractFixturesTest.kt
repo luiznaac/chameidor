@@ -43,9 +43,10 @@ class ContractFixturesTest : StringSpec({
             host = "portfolio:8080",
             endpoint = "/consolidations/BOND/1",
             data = null,
+            createdBy = "valoab",
         )
 
-        mapper.readTree(mapper.writeValueAsBytes(task)) shouldBe
+        mapper.readTree(mapper.writeValueAsBytes(TaskRegistrationResponse.from(task))) shouldBe
             mapper.readTree(contractsDir().resolve("tasks-one-time-response.json"))
     }
 
@@ -55,10 +56,11 @@ class ContractFixturesTest : StringSpec({
             host = "portfolio:8080",
             endpoint = "/consolidations/BOND/1",
             data = null,
+            createdBy = "valoab",
             cron = CronExpression.parse("0 */5 * * * *"),
         )
 
-        mapper.readTree(mapper.writeValueAsBytes(task)) shouldBe
+        mapper.readTree(mapper.writeValueAsBytes(TaskRegistrationResponse.from(task))) shouldBe
             mapper.readTree(contractsDir().resolve("tasks-periodic-response.json"))
     }
 })

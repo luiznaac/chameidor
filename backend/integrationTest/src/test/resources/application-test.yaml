@@ -5,3 +5,9 @@ mysql:
   host: 'localhost'
   user: 'root'
   password: ''
+
+chameidor:
+  token: 'dev-chameidor-fixture-token'
+
+enqueue:
+  period: 1

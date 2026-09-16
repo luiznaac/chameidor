@@ -9,3 +9,9 @@ mysql:
 
 enqueue:
   period: ${ENQUEUE_TASKS_PERIOD:10}
+
+chameidor:
+  # chameidor's own identity token, presented as `Authorization: Bearer` on the callback to
+  # consumers. Generated per app (prefix `chameidor-`), provisioned out of band; consumers keep
+  # only its SHA-256. Required — see docs/external-systems.md.
+  token: ${CHAMEIDOR_TOKEN}

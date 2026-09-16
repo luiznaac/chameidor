@@ -48,8 +48,8 @@ class TaskEntity(id: EntityID<Int>) : IntEntity(id) {
     var createdAt by TaskTable.createdAt
 
     fun toModel() = when {
-        cron != null -> PeriodicTask(id.value, host, endpoint, data, CronExpression.parse("0 " + cron!!))
-        else -> OneTimeTask(id.value, host, endpoint, data)
+        cron != null -> PeriodicTask(id.value, host, endpoint, data, createdBy, CronExpression.parse("0 " + cron!!))
+        else -> OneTimeTask(id.value, host, endpoint, data, createdBy)
     }
 
     fun toView(): TaskView = TaskView(
