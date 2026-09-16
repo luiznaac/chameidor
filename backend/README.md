@@ -28,8 +28,11 @@ back when it's time.
 4. Every attempt (success or failure) is recorded, along with the task's history, so you can see
    what happened and when the next execution is scheduled.
 
-Requests must include an `X-External-System` header — this is how chameidor knows which system a
-task belongs to, so many different apps can safely use the same chameidor instance.
+Task registration is authenticated: every request carries an `Authorization: Bearer <token>` whose
+token was issued per app and registered in chameidor's `external_systems` allowlist. The token
+*is* the identity — chameidor stores only its SHA-256 digest, derives `created_by` from it, and
+lets operators rotate or deactivate a system with a plain `UPDATE`. The registry, provisioning
+and error contract live in [docs/external-systems.md](docs/external-systems.md).
 
 ## Using it
 
@@ -50,14 +53,16 @@ MYSQL_USER=root
 MYSQL_PASSWORD=
 ```
 
-The service listens on port `8080`.
+The service listens on port `8080`. Before you can register tasks you need one entry in the
+`external_systems` registry — see [Local development](docs/external-systems.md#local-development)
+for the fixture token to seed.
 
 ### Register a one-time task
 
 ```bash
 curl -X POST http://localhost:8080/tasks/one-time \
   -H "Content-Type: application/json" \
-  -H "X-External-System: my-app" \
+  -H "Authorization: Bearer my-app-token" \
   -d '{ "host": "https://example.com", "endpoint": "/do-thing", "data": {"key": "value"} }'
 ```
 
@@ -66,7 +71,7 @@ curl -X POST http://localhost:8080/tasks/one-time \
 ```bash
 curl -X POST http://localhost:8080/tasks/periodic \
   -H "Content-Type: application/json" \
-  -H "X-External-System: my-app" \
+  -H "Authorization: Bearer my-app-token" \
   -d '{ "host": "https://example.com", "endpoint": "/do-thing", "data": {"key": "value"}, "cron": "*/10 * * * *" }'
 ```
 

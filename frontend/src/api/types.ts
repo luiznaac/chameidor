@@ -1,7 +1,7 @@
 // Mirrors chameidor's http-api edge DTOs
-// (backend/http-api/.../controller/TaskResponse.kt) plus the request bodies
-// accepted by TaskController and the HealthCheckResult it serialises.
-// Keep both sides in sync in the same commit.
+// (backend/http-api/.../controller/TaskResponse.kt and ErrorResponse.kt) plus
+// the request bodies accepted by TaskController and the HealthCheckResult it
+// serialises. Keep both sides in sync in the same commit.
 
 export type TaskStatus = "WAITING" | "QUEUED" | "EXECUTING" | "EXECUTED";
 export type TaskType = "one_time" | "periodic";
@@ -41,6 +41,11 @@ export interface HealthCheckResult {
   service_name: string;
   is_healthy: boolean;
   timestamp: string;
+}
+
+// Shape of every error body (401/403/404): {"error": "..."}.
+export interface ErrorResponse {
+  error: string;
 }
 
 // --- request bodies (POST /tasks/one-time, POST /tasks/periodic) ---

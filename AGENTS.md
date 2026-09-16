@@ -17,7 +17,8 @@ Two projects, one repo:
 `frontend/src/api/types.ts` is a hand-maintained mirror of the edge DTOs in
 `backend/http-api/src/main/kotlin/dev/agner/chameidor/httpapi/controller/`
 (`TaskResponse.kt` for the read endpoints, `TaskCreation` / `HealthCheckResult`
-for the rest). They are serialized by `JsonMapper` — snake_case keys, null
+for the rest, `ErrorResponse.kt` for error bodies). They are serialized by
+`JsonMapper` — snake_case keys, null
 fields omitted, dates as ISO-8601 strings. Any change to a request/response DTO
 on one side must update the other **in the same commit** — that's the reason
 these two live in one repo.

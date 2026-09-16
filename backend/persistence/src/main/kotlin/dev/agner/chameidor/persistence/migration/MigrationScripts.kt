@@ -1,5 +1,6 @@
 package dev.agner.chameidor.persistence.migration
 
+import dev.agner.chameidor.persistence.auth.ExternalSystemTable
 import dev.agner.chameidor.persistence.configuration.mysqlJdbcUrl
 import dev.agner.chameidor.persistence.task.TaskExecutionTable
 import dev.agner.chameidor.persistence.task.TaskHistoryTable
@@ -15,7 +16,7 @@ const val MIGRATIONS_DIRECTORY = "src/main/resources/db/migration"
 // Every table this service maps, in dependency order. Single source for the two things that need
 // the whole set: MigrationSchemaTest (which diffs it against a migrated database) and this file's
 // own `generateMigrationScript` entry point. A new *Table object must be added here.
-val allTables: Array<Table> = arrayOf(TaskTable, TaskHistoryTable, TaskExecutionTable)
+val allTables: Array<Table> = arrayOf(TaskTable, TaskHistoryTable, TaskExecutionTable, ExternalSystemTable)
 
 // Authoring half of the migration workflow (backend/AGENTS.md). Diffs `allTables` against a
 // local database already migrated to head and writes the SQL that closes the gap into
