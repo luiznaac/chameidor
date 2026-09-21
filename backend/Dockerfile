@@ -1,5 +1,5 @@
 # Builder
-FROM gradle:8.14-jdk21 AS builder
+FROM gradle:9.7-jdk21 AS builder
 
 COPY ./ /home/gradle/project
 
