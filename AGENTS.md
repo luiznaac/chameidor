@@ -15,6 +15,12 @@ Two projects, one repo:
 
 Root `package.json` holds script shims only (`npm run be:build`, `npm run fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks by path (`^backend/` → `./gradlew detekt`, `^frontend/` → `npm run typecheck`). It also carries `no-commit-to-branch` — the git/PR conventions are enforced there, not merely stated (see `salgadinhos/global/AGENTS.md`).
 
+## Config & secrets
+
+Runtime settings are env vars wired into `application.yaml` (a few fixed values aside); the full list with per-variable notes is in [backend/AGENTS.md](backend/AGENTS.md) §Configuration. Locally the IntelliJ run config `backend/.run/BootKt.run.xml` and `docker compose up` supply them — the app does not read `.env` yet. The versioned [`.env.example`](.env.example) is the reference for the vars and their dev fixtures; `.env` is gitignored so real values stay out of git.
+
+No real secret has a default in code: a missing `MYSQL_*` or `CHAMEIDOR_TOKEN` fails the boot. The fixture is `CHAMEIDOR_TOKEN=dev-chameidor-fixture-token`; the single secrets doc is `docs/salgadinhos/secrets.md` in the salgadinhos repo.
+
 ## Docker
 
 One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Ktor app (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the app). No DB in the image. `docker-compose.yml` at the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose.yml` is the MySQL-only compose for backend-only local runs. The schema comes from `backend/persistence/src/main/resources/db/migration/V*.sql`, applied by Flyway (`bin/migrate` in the image) from `deploy/entrypoint.sh` before the app starts — see [backend/AGENTS.md](backend/AGENTS.md) §7. `.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) after the "CI" workflow succeeds on `master`.

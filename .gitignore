@@ -13,8 +13,11 @@ node_modules/
 dist/
 *.tsbuildinfo
 *.local
+
+### Local secrets (see .env.example) ###
 .env
 .env.*.local
+docker-compose.override.yml
 
 ### Gradle / backend (belt-and-braces; backend/.gitignore is authoritative) ###
 .gradle/
