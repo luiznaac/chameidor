@@ -39,7 +39,7 @@ RUN gradle -Dorg.gradle.daemon=false :application:installDist --stacktrace
 # ---------------------------------------------------------------------------
 # Stage 3 — runtime
 # ---------------------------------------------------------------------------
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:24-jre-noble
 WORKDIR /opt/app
 
 RUN apt-get update \
