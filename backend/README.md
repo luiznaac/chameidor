@@ -1,43 +1,23 @@
 # chameidor backend
 
-The backend service of the [chameidor monorepo](../README.md). All commands below run from this
-`backend/` directory.
+The backend service of the [chameidor monorepo](../README.md). All commands below run from this `backend/` directory.
 
-A small, self-hosted **task scheduler**. Other applications register tasks with chameidor over
-HTTP — "call this URL once at some point" or "call this URL every N minutes forever" — and
-chameidor takes care of calling them on time, keeping track of whether each call succeeded, and
-telling you the history.
+A small, self-hosted **task scheduler**. Other applications register tasks with chameidor over HTTP — "call this URL once at some point" or "call this URL every N minutes forever" — and chameidor takes care of calling them on time, keeping track of whether each call succeeded, and telling you the history.
 
-Think of it as a tiny, private alternative to a cron job runner or a cloud task-scheduling
-service, meant to be shared by a handful of your own applications.
+Think of it as a tiny, private alternative to a cron job runner or a cloud task-scheduling service, meant to be shared by a handful of your own applications.
 
 ## Why it exists
 
-If you have several small personal services and each of them needs "do X every 10 minutes" or
-"do Y once, five hours from now", you'd otherwise bolt a scheduler onto every single one of them.
-chameidor centralizes that: your other apps just register a task once, and chameidor calls them
-back when it's time.
+If you have several small personal services and each of them needs "do X every 10 minutes" or "do Y once, five hours from now", you'd otherwise bolt a scheduler onto every single one of them. chameidor centralizes that: your other apps just register a task once, and chameidor calls them back when it's time.
 
 ## How it works, in short
 
-1. An external system sends an HTTP request to chameidor: "register a task that calls
-   `POST /some/endpoint` on host `X` with this JSON payload, either once or on this cron
-   schedule."
+1. An external system sends an HTTP request to chameidor: "register a task that calls `POST /some/endpoint` on host `X` with this JSON payload, either once or on this cron schedule."
 2. chameidor stores the task in a MySQL database.
 3. A background loop wakes up periodically, checks which tasks are due, and calls them.
-4. Every attempt (success or failure) is recorded, along with the task's history, so you can see
-   what happened and when the next execution is scheduled.
+4. Every attempt (success or failure) is recorded, along with the task's history, so you can see what happened and when the next execution is scheduled.
 
-Task registration is authenticated: every request carries an `Authorization: Bearer <token>` whose
-token was issued per app and registered in chameidor's `external_systems` allowlist. The token
-*is* the identity — chameidor stores only its SHA-256 digest, derives `created_by` from it, and
-lets operators rotate or deactivate a system with a plain `UPDATE`. The same convention works in
-the other direction: the callback to a consumer carries chameidor's own token
-(`CHAMEIDOR_TOKEN`) plus the task's creator and id in the `X-External-System` and
-`X-Chameidor-Task-Id` headers, and the consumer validates the Bearer. The registry, provisioning,
-error contract, the deprecated `X-External-System` alias (accepted alone with a WARNING until
-every caller migrates) and its removal plan live in
-[docs/external-systems.md](docs/external-systems.md).
+Task registration is authenticated: every request carries an `Authorization: Bearer <token>` whose token was issued per app and registered in chameidor's `external_systems` allowlist. The token *is* the identity — chameidor stores only its SHA-256 digest, derives `created_by` from it, and lets operators rotate or deactivate a system with a plain `UPDATE`. The same convention works in the other direction: the callback to a consumer carries chameidor's own token (`CHAMEIDOR_TOKEN`) plus the task's creator and id in the `X-External-System` and `X-Chameidor-Task-Id` headers, and the consumer validates the Bearer. The registry, provisioning, error contract, the deprecated `X-External-System` alias (accepted alone with a WARNING until every caller migrates) and its removal plan live in [docs/external-systems.md](docs/external-systems.md).
 
 ## Using it
 
@@ -49,8 +29,7 @@ You'll need Docker and JDK 21.
 docker compose -f docker-compose.yml up -d mysql   # starts a local MySQL instance
 ```
 
-Then run the application (main class `dev.agner.chameidor.application.BootKt`) with these
-environment variables set:
+Then run the application (main class `dev.agner.chameidor.application.BootKt`) with these environment variables set:
 
 ```
 MYSQL_HOST=localhost
@@ -59,9 +38,7 @@ MYSQL_PASSWORD=
 CHAMEIDOR_TOKEN=dev-chameidor-fixture-token
 ```
 
-The service listens on port `8080`. Before you can register tasks you need one entry in the
-`external_systems` registry — see [Local development](docs/external-systems.md#local-development)
-for the fixture token to seed.
+The service listens on port `8080`. Before you can register tasks you need one entry in the `external_systems` registry — see [Local development](docs/external-systems.md#local-development) for the fixture token to seed.
 
 ### Register a one-time task
 
@@ -81,9 +58,7 @@ curl -X POST http://localhost:8080/tasks/periodic \
   -d '{ "host": "example.com", "endpoint": "/do-thing", "data": {"key": "value"}, "cron": "*/10 * * * *" }'
 ```
 
-`host` is a bare authority — chameidor prepends `http://`. It will call `POST
-http://example.com/do-thing` with the given payload according to the schedule, and keep retrying
-it going forward for periodic tasks.
+`host` is a bare authority — chameidor prepends `http://`. It will call `POST http://example.com/do-thing` with the given payload according to the schedule, and keep retrying it going forward for periodic tasks.
 
 ### Inspect tasks
 
@@ -112,11 +87,8 @@ These endpoints back the [`frontend/`](../frontend) SPA.
 - `persistence` — how tasks and their history are stored in MySQL.
 - `gateway` — how chameidor calls back into the systems that registered tasks.
 
-See [AGENTS.md](AGENTS.md) if you're going to make changes — it documents the architecture and
-conventions in detail.
+See [AGENTS.md](AGENTS.md) if you're going to make changes — it documents the architecture and conventions in detail.
 
 ## Deployment
 
-The published `luiznaac/chameidor` Docker image is the **combined** backend + SPA image built from
-the [repo-root `Dockerfile`](../Dockerfile) (see [../README.md](../README.md)). `backend/Dockerfile`
-still builds a backend-only image if you want just the API.
+The published `luiznaac/chameidor` Docker image is the **combined** backend + SPA image built from the [repo-root `Dockerfile`](../Dockerfile) (see [../README.md](../README.md)). `backend/Dockerfile` still builds a backend-only image if you want just the API.
