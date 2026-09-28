@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
 
 plugins {
 	jacoco
-	kotlin("jvm") version "2.2.20"
-	kotlin("plugin.spring") version "2.2.20"
+	kotlin("jvm") version "2.4.20"
+	kotlin("plugin.spring") version "2.4.20"
 	id("io.gitlab.arturbosch.detekt") version "1.23.8"
 	id("io.spring.dependency-management") version "1.1.7"
 }
