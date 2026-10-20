@@ -13,7 +13,7 @@ Two projects, one repo:
 
 ## Tooling
 
-Root `package.json` holds script shims only (`npm run be:build`, `npm run fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies and is not a real package. `.pre-commit-config.yaml` lives at the root and scopes hooks by path (`^backend/` → `./gradlew detekt`, `^frontend/` → `npm run typecheck`). It also carries `no-commit-to-branch` — the git/PR conventions are enforced there, not merely stated (see `salgadinhos/global/AGENTS.md`).
+Root `package.json` holds script shims only (`npm run be:unit`, `npm run be:integration`, `npm run be:build`/`be:test` for both lanes (needs Docker), `npm run be:detekt`, `npm run fe:build`, `npm run check`, `npm run db`, `npm run db:migrate`, `npm run db:generate -- -Pname=V2__x`, `npm run up`). It has no dependencies and is not a real package. `be:unit` is the Docker-free `unitTest` lane the pre-commit hook also runs; `be:integration` is the Docker-backed one. `.pre-commit-config.yaml` lives at the root and scopes hooks by path (`^backend/` → `./gradlew detekt` and `./gradlew unitTest`, `^frontend/` → `npm run typecheck`). It also carries `no-commit-to-branch` — the git/PR conventions are enforced there, not merely stated (see `salgadinhos/global/AGENTS.md`).
 
 ## Config & secrets
 

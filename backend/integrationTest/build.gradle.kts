@@ -1,3 +1,5 @@
+import java.util.concurrent.TimeUnit
+
 dependencies {
     testImplementation(project(":application"))
     // Reaches KtorConfig etc. transitively via :application already, but MigrationSchemaTest
@@ -21,4 +23,64 @@ dependencies {
     testImplementation(libs.exposed.jdbc)
     testImplementation(libs.exposed.migration.core)
     testImplementation(libs.exposed.migration.jdbc)
+}
+
+// Testcontainers only discovers an unreachable daemon once a spec's first container starts, which
+// surfaces as an opaque DockerClientProviderStrategy error buried in the HTML report. Probe the
+// daemon first so the whole integration lane fails in seconds with a message that says what to do.
+val dockerPreflight by tasks.registering {
+    group = "verification"
+    description = "Fails fast, with an actionable message, when the Docker daemon is unavailable."
+
+    doLast {
+        fun dockerUnavailable(reason: String, detail: String = "", cause: Throwable? = null): Nothing =
+            throw GradleException(
+                """
+                The integration tests need $reason
+                Start Docker (or fix access to the daemon) and retry, or run the Docker-free unit suite with: npm run be:unit
+                $detail
+                """.trimIndent(),
+                cause,
+            )
+
+        val process = try {
+            ProcessBuilder("docker", "info").redirectErrorStream(true).start()
+        } catch (exception: java.io.IOException) {
+            dockerUnavailable("Docker, but the `docker` CLI is not on PATH.", cause = exception)
+        }
+        // Drain the output while the probe runs: a full pipe buffer would deadlock it before it returns.
+        val output = StringBuilder()
+        val drain = Thread {
+            process.inputStream.bufferedReader().use { output.append(it.readText()) }
+        }.apply { start() }
+        // A wedged daemon would otherwise hang the preflight itself — the failure mode this task exists to cut short.
+        val finished = process.waitFor(30, TimeUnit.SECONDS)
+        if (!finished) {
+            process.destroyForcibly()
+        }
+        drain.join(5_000)
+        val exitCode = if (finished) process.exitValue() else null
+        if (exitCode != 0) {
+            val detail = output.lines()
+                .filter { line ->
+                    listOf("error", "denied", "cannot connect", "not running")
+                        .any { line.contains(it, ignoreCase = true) }
+                }
+                .take(3)
+                .ifEmpty { output.trim().lines().takeLast(3) }
+                .joinToString("\n")
+            dockerUnavailable(
+                reason = if (exitCode == null) {
+                    "a running Docker daemon, but `docker info` did not return in 30s."
+                } else {
+                    "an accessible Docker daemon, but `docker info` exited $exitCode."
+                },
+                detail = detail,
+            )
+        }
+    }
+}
+
+tasks.test {
+    dependsOn(dockerPreflight)
 }

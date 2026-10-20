@@ -22,7 +22,7 @@ application  →  http-api  →  usecase  ←  persistence
 - **`http-api`** — Ktor routes, wired into Spring as `@Component` beans implementing `ControllerTemplate` (see "Runtime wiring model" below). Talks to `usecase` services only — never to `persistence` directly.
 - **`gateway`** — outbound HTTP clients (Ktor client/CIO) used to call external systems and their health checks.
 - **`application`** — composition root. `Boot.kt` is a plain `@Configuration` class with `@ComponentScan(basePackages = ["dev.agner.chameidor"])` and a `main()` that calls `runApplication<Boot>()`. It contributes no logic of its own — just `application.yaml` / `application-prod.yaml` / `logback.xml`.
-- **`integrationTest`** — separate module; boots the real stack via docker-compose + WireMock and exercises it end-to-end. Not run as part of `test`; see "Testing" below.
+- **`integrationTest`** — separate module; boots the real stack via docker-compose + WireMock and exercises it end-to-end. Its `test` task is the Docker-backed integration lane; `dockerPreflight` fails fast when the daemon is unavailable — see "Testing" below.
 
 ### Runtime wiring model (important — don't reinvent this)
 
@@ -50,11 +50,24 @@ Model in `usecase` → define an `I<Name>Repository` port there → service (con
 
 ## Code style
 
-Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true` — **the build fails on any issue**, run `./gradlew detekt` before considering a change done. 4-space indent, 120 cols, trailing commas mandatory, no wildcard imports, `allWarningsAsErrors = true` (a compiler warning is a build failure — fix it, don't suppress it).
+Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true` — **the build fails on any issue**, run `./gradlew detekt --no-daemon` before considering a change done. 4-space indent, 120 cols, trailing commas mandatory, no wildcard imports, `allWarningsAsErrors = true` (a compiler warning is a build failure — fix it, don't suppress it).
 
 ## Testing
 
-Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, `DockerComposeExtension` + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there. `./gradlew test` runs both and needs Docker — scope to `./gradlew :usecase:test` etc. while iterating on something that doesn't need it.
+Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, `DockerComposeExtension` + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
+
+Two speeds of verification, two lanes:
+
+```bash
+npm run be:unit                    # unit lane — `unitTest`: every module except :integrationTest; no Docker
+npm run be:integration             # integration lane — :integrationTest; needs Docker
+./gradlew test --no-daemon         # every test (both lanes); needs Docker
+./gradlew testCoverageReport --no-daemon  # every test plus aggregated JaCoCo; needs Docker
+```
+
+The unit lane is the `unitTest` task — the same one the `test (backend, unit)` pre-commit hook runs — so committing never needs Docker; the integration lane stays in CI (`./gradlew clean build`, Docker present). `:integrationTest:dockerPreflight` probes the daemon before any spec starts and fails in seconds with a message that says how to proceed, instead of leaving an opaque `DockerClientProviderStrategy` error to be found in the HTML report. Scope to `./gradlew :usecase:test` etc. while iterating on one module.
+
+Run check commands with `--no-daemon` — the `npm` scripts already do. A Gradle daemon left behind by a failed build inherits the shell's output pipe and can keep the command from returning long after the build itself finished.
 
 ## Database migrations
 
@@ -84,10 +97,11 @@ Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setti
 ## Build, run, deploy
 
 ```bash
-./gradlew clean build          # full build, same as CI
-./gradlew test                 # unit tests only
-./gradlew testCoverageReport   # aggregated JaCoCo report
-./gradlew detekt               # lint (auto-fixes what it can)
+./gradlew clean build --no-daemon          # full build (both lanes), same as CI
+./gradlew unitTest --no-daemon             # unit lane only, no Docker
+./gradlew :integrationTest:test --no-daemon  # integration lane, needs Docker
+./gradlew testCoverageReport --no-daemon   # every test plus aggregated JaCoCo, needs Docker
+./gradlew detekt --no-daemon               # lint (auto-fixes what it can)
 ```
 
 Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the repo root) starts MySQL 9.4.0 empty — run `./gradlew :persistence:migrate` (or `npm run db:migrate`) to bring it to head, see "Database migrations" above — then run `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`, `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config).
