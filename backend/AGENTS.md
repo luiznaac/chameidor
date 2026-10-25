@@ -4,6 +4,10 @@ Development guidelines for anyone (human, agent, or tool) working in the chameid
 
 All backend commands run from `backend/` (`cd backend && ./gradlew …`).
 
+## Code map
+
+- [`docs/code-map.md`](docs/code-map.md)
+
 ## What this service does
 
 chameidor is a task scheduler/executor. Clients register a **one-time** or **periodic** (cron) task over HTTP, giving a target host/endpoint and a payload. chameidor persists the task, and a background loop periodically polls for tasks that are due, calls the target endpoint with the stored payload, and records the outcome (success/failure, next execution time for periodic tasks). Every registration is authenticated with an opaque `Authorization: Bearer` token whose SHA-256 digest is registered in the `external_systems` table — the resolved system name is stored as `createdBy`, so multiple systems share one chameidor instance safely. Auth is decided in exactly one place, the `authorize(caller, target, credential)` seam of `usecase/auth/AuthorizationService`; the registry, provisioning, the deprecated `X-External-System` alias (accepted alone with a WARNING during the migration window) and its removal plan live in [docs/external-systems.md](docs/external-systems.md). Callbacks are authenticated symmetrically: chameidor presents its own token (`chameidor.token`) as `Authorization: Bearer` and sends the task's creator and id as the `X-External-System`/`X-Chameidor-Task-Id` headers, both decided in `gateway/call/CallGateway.kt`.
