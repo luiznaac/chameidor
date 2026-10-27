@@ -26,4 +26,8 @@ npm run build         # tsc -b && vite build
 - **Pages today**: `Dashboard`, `Tasks` (flat list), and `ComingSoon` as the placeholder for `/tasks/new` and `/tasks/:id` — those are genuinely unimplemented, not broken; check the current route tree in `App.tsx` before assuming a page exists.
 - **`components/`**: `ExecutionsTable`, `HealthPanel`, `StatusBadge`, `UpcomingExecutions` are chameidor-specific; `Layout`/`Panel` are the shared chrome primitives (same idea as every sibling frontend's `Layout`/`Panel`).
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 Git/PR conventions: see `salgadinhos/global/AGENTS.md`.
