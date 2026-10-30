@@ -30,10 +30,18 @@ node <salgadinhos>/adapters/sandbox/run.mjs --stack node --workspace <repo-root>
 
 `--stack node` is required because the monorepo root's `package.json` is a dependency-less scripts shim, so the runner's marker detection intentionally does not detect it (its error suggests pointing at `frontend/`). The command mirrors the frontend install in `npm run setup`, but the install runs in the sandbox, never on the host — the rule and setup live in `salgadinhos` at `global/AGENTS.md` → "Sandbox for third-party installs" and `docs/salgadinhos/sandbox-bootstrap.md`.
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 ## Chameidor-specific pieces
 
 - **`api/types.ts` mirrors `TaskResponse`/`TaskRegistrationResponse`/`TaskCreation`/`HealthCheckResult`/`ErrorResponse`** from `backend/http-api/.../controller/`, snake_case + null-omitted per `JsonMapper` — see the root [`AGENTS.md`](../AGENTS.md)'s cross-cutting rule. `TaskStatus`/`TaskType` are the two enums to keep in sync if the backend adds a value.
 - **Pages today**: `Dashboard`, `Tasks` (flat list), and `ComingSoon` as the placeholder for `/tasks/new` and `/tasks/:id` — those are genuinely unimplemented, not broken; check the current route tree in `App.tsx` before assuming a page exists.
 - **`components/`**: `ExecutionsTable`, `HealthPanel`, `StatusBadge`, `UpcomingExecutions` are chameidor-specific; `Layout`/`Panel` are the shared chrome primitives (same idea as every sibling frontend's `Layout`/`Panel`).
+
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
 
 Git/PR conventions: see `salgadinhos/global/AGENTS.md`.

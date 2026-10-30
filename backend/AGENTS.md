@@ -56,6 +56,10 @@ Model in `usecase` → define an `I<Name>Repository` port there → service (con
 
 Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true` — **the build fails on any issue**, run `./gradlew detekt --no-daemon` before considering a change done. 4-space indent, 120 cols, trailing commas mandatory, no wildcard imports, `allWarningsAsErrors = true` (a compiler warning is a build failure — fix it, don't suppress it).
 
+## Coding standards
+
+- [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
+
 ## Testing
 
 Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, `DockerComposeExtension` + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
