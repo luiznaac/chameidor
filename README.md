@@ -21,11 +21,26 @@ npm run db         # start MySQL (docker) for the backend
 Then, in two shells:
 
 ```bash
-npm run be:build && (cd backend && ./gradlew :application:run)   # backend  -> http://localhost:8080
-npm run fe:dev                                                   # frontend -> http://localhost:5273  (proxies /api -> :8080)
+npm run be:build && (cd backend && ./gradlew :application:run)   # backend  -> http://localhost:8100
+npm run fe:dev                                                   # frontend -> http://localhost:8103  (proxies /api -> :8100)
 ```
 
 (Or run `dev.agner.chameidor.application.BootKt` from IntelliJ — see `backend/.run/BootKt.run.xml`.)
+
+### Ports
+
+Local host ports follow the family's canonical allocation block. Only the **host** side moves;
+container-internal ports stay fixed (`API_PORT=8080`, `WEB_PORT=8081`, MySQL `3306`).
+
+| Role | URL | Host env key | Container-internal |
+|---|---|---|---|
+| `api` | `http://localhost:8100` | `KTOR_PORT` | `8080` |
+| `web` | `http://localhost:8101` | `WEB_HOST_PORT` | `8081` |
+| `mysql` | `localhost:8102` | `MYSQL_PORT` | `3306` |
+| `frontend-dev` | `http://localhost:8103` | `FRONTEND_DEV_PORT` | — |
+
+The committed [`ports.json`](.salgadinhos/ports.json) records the block; a local env file may
+override any host port. The integration suite binds none of them — it takes free ports at run time.
 
 ## Docker
 
@@ -33,12 +48,12 @@ One image holds both processes — the Ktor app (API) and `nginx` (the built SPA
 
 ```bash
 docker compose up --build     # app + MySQL, full stack
-#   UI   -> http://localhost:8081
-#   API  -> http://localhost:8080
+#   UI   -> http://localhost:8101
+#   API  -> http://localhost:8100
 docker compose -f backend/docker-compose.yml up -d mysql   # just the DB
 ```
 
-Ports are configurable with `API_PORT` / `WEB_PORT`.
+The host ports are configurable with `KTOR_PORT` / `WEB_HOST_PORT` / `MYSQL_PORT` (see the port table above).
 
 **Publishing:** every push to `master` that touches `backend/`, `frontend/`, `Dockerfile`, or `deploy/` builds and pushes `luiznaac/chameidor:latest` and `:v<run-number>` (a sequential build number) to Docker Hub (`.github/workflows/docker-image.yml`).
 

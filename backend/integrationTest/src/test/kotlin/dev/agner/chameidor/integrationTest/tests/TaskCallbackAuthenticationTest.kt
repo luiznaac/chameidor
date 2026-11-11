@@ -6,6 +6,7 @@ import dev.agner.chameidor.httpapi.controller.TaskRegistrationResponse
 import dev.agner.chameidor.httpapi.controller.TaskResponse
 import dev.agner.chameidor.integrationTest.config.HttpMockService
 import dev.agner.chameidor.integrationTest.config.IntegrationTest
+import dev.agner.chameidor.integrationTest.config.resolveAppBaseUrl
 import dev.agner.chameidor.integrationTest.helpers.getBean
 import dev.agner.chameidor.persistence.auth.ExternalSystemTable
 import dev.agner.chameidor.usecase.auth.TokenHasher
@@ -50,12 +51,12 @@ class TaskCallbackAuthenticationTest : StringSpec({
     }
 
     suspend fun registerTask(): Int {
-        val response = getBean<HttpClient>().post("http://localhost:8080/tasks/one-time") {
+        val response = getBean<HttpClient>().post(resolveAppBaseUrl() + "/tasks/one-time") {
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Authorization, "Bearer $systemToken")
             setBody(
                 mapOf(
-                    "host" to "localhost:3000",
+                    "host" to HttpMockService.host,
                     "endpoint" to callbackEndpoint,
                     "data" to mapOf("product_id" to 1),
                 ),
@@ -67,7 +68,7 @@ class TaskCallbackAuthenticationTest : StringSpec({
 
     suspend fun awaitTask(taskId: Int): TaskResponse {
         repeat(60) {
-            val task = getBean<HttpClient>().get("http://localhost:8080/tasks/$taskId").body<TaskResponse>()
+            val task = getBean<HttpClient>().get(resolveAppBaseUrl() + "/tasks/$taskId").body<TaskResponse>()
             if (task.status == "EXECUTED") return task
             delay(500)
         }
@@ -75,7 +76,7 @@ class TaskCallbackAuthenticationTest : StringSpec({
     }
 
     suspend fun singleExecution(taskId: Int): TaskExecutionResponse =
-        getBean<HttpClient>().get("http://localhost:8080/tasks/$taskId/executions")
+        getBean<HttpClient>().get(resolveAppBaseUrl() + "/tasks/$taskId/executions")
             .body<List<TaskExecutionResponse>>()
             .single()
 

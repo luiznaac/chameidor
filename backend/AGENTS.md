@@ -62,7 +62,7 @@ Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true
 
 ## Testing
 
-Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, `DockerComposeExtension` + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
+Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, Testcontainers MySQL + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
 
 Two speeds of verification, two lanes:
 
@@ -73,7 +73,7 @@ npm run be:integration             # integration lane — :integrationTest; need
 ./gradlew testCoverageReport --no-daemon  # every test plus aggregated JaCoCo; needs Docker
 ```
 
-The unit lane is the `unitTest` task — the same one the `test (backend, unit)` pre-commit hook runs — so committing never needs Docker; the integration lane stays in CI (`./gradlew clean build`, Docker present). `:integrationTest:dockerPreflight` probes the daemon before any spec starts and fails in seconds with a message that says how to proceed, instead of leaving an opaque `DockerClientProviderStrategy` error to be found in the HTML report. Scope to `./gradlew :usecase:test` etc. while iterating on one module.
+The unit lane is the `unitTest` task — the same one the `test (backend, unit)` pre-commit hook runs — so committing never needs Docker; the integration lane stays in CI (`./gradlew clean build`, Docker present). The integration suite takes free ports at run time (one Testcontainers MySQL per test JVM, an OS-probed app port, a dynamic WireMock port), so two concurrent runs — or a run beside a dev stack — do not contend; it binds none of the project's block ports. `:integrationTest:dockerPreflight` probes the daemon before any spec starts and fails in seconds with a message that says how to proceed, instead of leaving an opaque `DockerClientProviderStrategy` error to be found in the HTML report. Scope to `./gradlew :usecase:test` etc. while iterating on one module.
 
 Run check commands with `--no-daemon` — the `npm` scripts already do. A Gradle daemon left behind by a failed build inherits the shell's output pipe and can keep the command from returning long after the build itself finished.
 
@@ -86,7 +86,7 @@ The schema is versioned SQL under `persistence/src/main/resources/db/migration/V
 
 Changing a table: edit the `Table` object, then `./gradlew :persistence:generateMigrationScript -Pname=V2__add_something` (review the generated SQL — it's mechanical, won't detect a rename), then `./gradlew :persistence:migrate` locally. Full steps and pitfalls: salgadinhos' `kotlin-db-migration` skill.
 
-`integrationTest/.../tests/MigrationSchemaTest.kt` is the guard: `DockerComposeExtension` migrates the compose-provided MySQL to head before any spec runs, and this test asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails.
+`integrationTest/.../tests/MigrationSchemaTest.kt` is the guard: `MysqlContainerExtension` migrates the container MySQL to head before any spec runs, and this test asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails.
 
 ## Configuration
 
@@ -94,9 +94,10 @@ Changing a table: edit the `Table` object, then `./gradlew :persistence:generate
 
 | Key | Source | Notes |
 |---|---|---|
-| `ktor.port` | `KTOR_PORT` | defaults to `8080`; the combined Docker image sets it to `API_PORT` so nginx can own `8081` |
+| `ktor.port` | `KTOR_PORT` | defaults to `8100` (project block role `api`); the combined Docker image sets it to `API_PORT` so nginx can own `8081` |
 | `ktor.wait` | fixed `true` | blocks main thread on the embedded server |
 | `mysql.host` / `mysql.user` / `mysql.password` | `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` | required env vars, no defaults |
+| `mysql.port` | `MYSQL_PORT` | defaults to `8102` (block role `mysql`); the standalone `migrate()` path (`MysqlEnv`) reads the same variable with the same fallback |
 | `enqueue.period` | `ENQUEUE_TASKS_PERIOD` | defaults to `10` (seconds) if unset |
 | `chameidor.token` | `CHAMEIDOR_TOKEN` | required, no default; chameidor's own identity token, presented as `Authorization: Bearer` on callbacks to consumers (see [docs/external-systems.md](docs/external-systems.md)) |
 
@@ -112,7 +113,7 @@ Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setti
 ./gradlew detekt --no-daemon               # lint (auto-fixes what it can)
 ```
 
-Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the repo root) starts MySQL 9.4.0 empty — run `./gradlew :persistence:migrate` (or `npm run db:migrate`) to bring it to head, see "Database migrations" above — then run `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`, `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config).
+Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the repo root) starts MySQL 9.4.0 empty on host `8102` — run `./gradlew :persistence:migrate` (or `npm run db:migrate`) to bring it to head, see "Database migrations" above — then run `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`, `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config; it carries no port literals — the block defaults in `application.yaml` apply).
 
 Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14-jdk21` → `openjdk:21-slim`, port `8080`). The published `luiznaac/chameidor` image is now the **combined** one built from the repo-root `Dockerfile` (backend + built SPA under supervisord + nginx) — see `../AGENTS.md`.
 
