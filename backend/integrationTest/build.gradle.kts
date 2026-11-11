@@ -84,4 +84,8 @@ val dockerPreflight by tasks.registering {
 
 tasks.test {
     dependsOn(dockerPreflight)
+    // testcontainers' bundled docker-java defaults to Docker API 1.32, which Docker Engine 29+
+    // rejects ("client version 1.32 is too old. Minimum supported API version is 1.40"). Pin a
+    // version those daemons accept; it is also supported by every Docker the family runs against.
+    systemProperty("api.version", "1.44")
 }
