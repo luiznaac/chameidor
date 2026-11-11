@@ -38,12 +38,12 @@ MYSQL_PASSWORD=
 CHAMEIDOR_TOKEN=dev-chameidor-fixture-token
 ```
 
-The service listens on port `8080`. Before you can register tasks you need one entry in the `external_systems` registry — see [Local development](docs/external-systems.md#local-development) for the fixture token to seed.
+The service listens on host port `8100` (`KTOR_PORT`; MySQL is published on `8102`). The full four-role table is in the [root README](../README.md#ports). Before you can register tasks you need one entry in the `external_systems` registry — see [Local development](docs/external-systems.md#local-development) for the fixture token to seed.
 
 ### Register a one-time task
 
 ```bash
-curl -X POST http://localhost:8080/tasks/one-time \
+curl -X POST http://localhost:8100/tasks/one-time \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer my-app-token" \
   -d '{ "host": "example.com", "endpoint": "/do-thing", "data": {"key": "value"} }'
@@ -52,7 +52,7 @@ curl -X POST http://localhost:8080/tasks/one-time \
 ### Register a periodic (cron) task
 
 ```bash
-curl -X POST http://localhost:8080/tasks/periodic \
+curl -X POST http://localhost:8100/tasks/periodic \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer my-app-token" \
   -d '{ "host": "example.com", "endpoint": "/do-thing", "data": {"key": "value"}, "cron": "*/10 * * * *" }'
@@ -63,11 +63,11 @@ curl -X POST http://localhost:8080/tasks/periodic \
 ### Inspect tasks
 
 ```bash
-curl http://localhost:8080/tasks                 # list (filters: ?status=, ?created_by=, ?limit=, ?offset=)
-curl http://localhost:8080/tasks/1               # one task
-curl http://localhost:8080/tasks/1/executions    # its run history
-curl http://localhost:8080/tasks/1/history       # its state-change audit trail
-curl http://localhost:8080/tasks/executions      # recent executions across all tasks
+curl http://localhost:8100/tasks                 # list (filters: ?status=, ?created_by=, ?limit=, ?offset=)
+curl http://localhost:8100/tasks/1               # one task
+curl http://localhost:8100/tasks/1/executions    # its run history
+curl http://localhost:8100/tasks/1/history       # its state-change audit trail
+curl http://localhost:8100/tasks/executions      # recent executions across all tasks
 ```
 
 These endpoints back the [`frontend/`](../frontend) SPA.

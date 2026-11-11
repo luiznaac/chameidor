@@ -41,7 +41,7 @@ Module → key files → seam index for the `frontend/` lane, plus the app entry
 **Seam(s)**:
 - **Theme seam** (`src/index.css`) — the `@theme` block owns the accent, the four task-status colours (`--color-status-*`) and the execution-success/failure colours; components consume the CSS variables/classes by name, never a raw hex.
 - **Base-path seam** (`vite.config.ts`) — `base` is `/chameidor/` in production and `/` in dev, overridable with `VITE_BASE`; `main.tsx` derives the router `basename` from `import.meta.env.BASE_URL`, so the SPA is served behind the unified dashboard proxy.
-- **Dev server** (`vite.config.ts`) — port 5273 with the `/api` proxy to `VITE_API_TARGET ?? http://localhost:8080`.
+- **Dev server** (`vite.config.ts`) — `loadEnv` reads the env files, `port: FRONTEND_DEV_PORT ?? 8103` with `strictPort: true` (a taken port fails loudly instead of drifting off the block), and the `/api` proxy targets `VITE_API_TARGET ?? http://localhost:8100`.
 - **Quality gate** (`package.json`) — `npm run check` = `typecheck` + Biome + Vitest; `npm test` runs `src/lib/**` only (no DOM).
 
 ## Entry points

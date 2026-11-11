@@ -18,7 +18,7 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=chameidor
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-8102}:3306"
     volumes:
       - chameidor-mysql-data:/var/lib/mysql
     healthcheck:
@@ -40,13 +40,14 @@ services:
       - API_PORT=8080
       - WEB_PORT=8081
       - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
       - MYSQL_USER=root
       - MYSQL_PASSWORD=
       - ENQUEUE_TASKS_PERIOD=10
       - CHAMEIDOR_TOKEN=dev-chameidor-fixture-token
     ports:
-      - "8080:8080"   # API      (Ktor)
-      - "8081:8081"   # web / UI  (nginx: SPA + /api proxy)
+      - "${KTOR_PORT:-8100}:8080"       # API      (Ktor)
+      - "${WEB_HOST_PORT:-8101}:8081"   # web / UI  (nginx: SPA + /api proxy)
 
 volumes:
   chameidor-mysql-data:

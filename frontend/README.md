@@ -5,7 +5,7 @@ Frontend do agendador/executor de tasks [`chameidor`](../backend). SPA em React 
 ## Pré-requisitos
 
 - **Node.js 20+**.
-- O backend `chameidor` rodando em `http://localhost:8080` (ver [`../backend/README.md`](../backend/README.md)).
+- O backend `chameidor` rodando em `http://localhost:8100` (ver [`../backend/README.md`](../backend/README.md)).
 
 ## Rodar em dev
 
@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Abre em `http://localhost:5273`. As chamadas para `/api/*` são _proxied_ para `http://localhost:8080` (config em `vite.config.ts`, ajustável por `VITE_API_TARGET`) — assim não precisa mexer em CORS no backend.
+Abre em `http://localhost:8103` (`FRONTEND_DEV_PORT`). As chamadas para `/api/*` são _proxied_ para `http://localhost:8100` (config em `vite.config.ts`, ajustável por `VITE_API_TARGET`) — assim não precisa mexer em CORS no backend.
 
 > No PowerShell, se `npm` for bloqueado pela _execution policy_ (`npm.ps1 cannot be loaded`), use `npm.cmd install` / `npm.cmd run dev`.
 
