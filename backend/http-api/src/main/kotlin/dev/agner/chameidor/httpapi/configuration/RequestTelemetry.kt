@@ -13,6 +13,7 @@ import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.PipelineCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.engine.defaultExceptionStatusCode
 import io.ktor.server.plugins.origin
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
@@ -32,7 +33,8 @@ import io.opentelemetry.api.common.AttributeKey as OtelAttributeKey
  * Binds the request id before routing, echoes it, keeps the in-flight gauge honest and emits
  * the one boundary record per failed/degraded request. The 4xx WARN is driven from the
  * response status, so the controllers' direct 401/403/404 responses are covered without a
- * domain-error type. Successful requests stay out of the log lane.
+ * domain-error type; a framework-rejected request keeps Ktor's own 4xx/504 status instead of
+ * turning into a 500 ERROR. Successful requests stay out of the log lane.
  * `docs/observability.md` §3 (correlation) and §5 (HTTP server).
  */
 @Component
@@ -82,22 +84,40 @@ class RequestTelemetry(
     }
 
     private fun recordBoundary(call: ApplicationCall, requestContext: RequestContext, failure: Throwable?) {
-        val status = statusOf(call, failure)
+        // Ktor's own boundary mapping: a framework-rejected request (malformed body, unsupported
+        // media type, oversized payload, timeout) keeps its 4xx/504 status instead of becoming a
+        // 500, so an expected client-side degradation never logs as ERROR.
+        val frameworkStatus = failure?.let { defaultExceptionStatusCode(it) }
+        val status = statusOf(call, failure, frameworkStatus)
         if (status.value < 400) {
             return
         }
-        val errorType = errorTypeOf(failure, status)
+        val frameworkMapped = frameworkStatus != null
+        val errorType = errorTypeOf(failure, status, frameworkMapped)
         val attributes = requestAttributes(call, requestContext, status, errorType)
-        val level = if (status.value >= 500) EventLevel.ERROR else EventLevel.WARN
-        val throwable = failure?.takeIf { status.value >= 500 }
+        val unexpectedFailure = status.value >= 500 && !frameworkMapped
+        val level = if (unexpectedFailure) EventLevel.ERROR else EventLevel.WARN
+        val throwable = failure?.takeIf { unexpectedFailure }
         log.event(HTTP_REQUEST_FAILED, *attributes.toTypedArray(), level = level, throwable = throwable)
     }
 
-    private fun statusOf(call: ApplicationCall, failure: Throwable?): HttpStatusCode =
-        if (failure != null) HttpStatusCode.InternalServerError else call.response.status() ?: HttpStatusCode.OK
+    private fun statusOf(
+        call: ApplicationCall,
+        failure: Throwable?,
+        frameworkStatus: HttpStatusCode?,
+    ): HttpStatusCode =
+        if (failure != null) {
+            frameworkStatus ?: HttpStatusCode.InternalServerError
+        } else {
+            call.response.status() ?: HttpStatusCode.OK
+        }
 
-    private fun errorTypeOf(failure: Throwable?, status: HttpStatusCode): String = when {
-        failure != null -> failure::class.java.simpleName
+    private fun errorTypeOf(
+        failure: Throwable?,
+        status: HttpStatusCode,
+        frameworkMapped: Boolean,
+    ): String = when {
+        failure != null && !frameworkMapped -> failure::class.java.simpleName
         status == HttpStatusCode.NotFound -> TelemetryAttributes.RESOURCE_NOT_FOUND
         status.value == 400 || status.value == 422 -> TelemetryAttributes.INVALID_ARGUMENT
         else -> TelemetryAttributes.DOMAIN_ERROR

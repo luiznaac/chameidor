@@ -6,14 +6,17 @@ applied:
   revision: 2
   scaffold_sha: 95b7b3ed91078831644afbda05c68b0258c0577b
 allow:
-  # docs/observability.md §8 (chameidor): this lane has no DomainException and no StatusPages
-  # boundary, so the 4xx WARN is driven from the response status instead of the exception type.
+  # docs/observability.md §8 (chameidor): this lane has no DomainException and no domain-error
+  # type, so a 4xx WARN is driven from the response status, and a framework-rejected request
+  # keeps Ktor's own default status mapping.
   - entry: http-api/src/main/kotlin/dev/agner/template/httpapi/configuration/RequestTelemetry.kt
     reason: >-
       The scaffold file couples the boundary record to DomainException; chameidor has no
-      domain-error type and drives the 4xx WARN from the response status instead
+      domain-error type, drives the 4xx WARN from the response status instead, and resolves a
+      framework-rejected failure through Ktor's defaultExceptionStatusCode
       (docs/observability.md §8, chameidor row). Ported by judgment.
   - entry: http-api/src/test/kotlin/dev/agner/template/httpapi/configuration/RequestTelemetryTest.kt
     reason: >-
       Same fork as RequestTelemetry.kt: the test pins the response-status-driven 4xx path, a
-      direct 401, and the parameterized-route template; it has no DomainException harness.
+      direct 401, the framework 4xx/504 mapping, and the parameterized-route template; it has
+      no DomainException harness.
