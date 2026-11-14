@@ -45,6 +45,11 @@ services:
       - MYSQL_PASSWORD=
       - ENQUEUE_TASKS_PERIOD=10
       - CHAMEIDOR_TOKEN=dev-chameidor-fixture-token
+      - OTEL_SERVICE_NAME=chameidor
+      # Empty keeps the dev default (http://localhost:4318); a Collector is infra-owned and
+      # never shipped in this image or compose file.
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - TELEMETRY_CONSOLE=${TELEMETRY_CONSOLE:-false}
     ports:
       - "${KTOR_PORT:-8100}:8080"       # API      (Ktor)
       - "${WEB_HOST_PORT:-8101}:8081"   # web / UI  (nginx: SPA + /api proxy)

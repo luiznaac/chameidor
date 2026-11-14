@@ -10,6 +10,10 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.jackson)
 
+    implementation(libs.opentelemetry.api)
+    implementation(libs.opentelemetry.ktor)
+
     testImplementation(libs.bundles.testDependencies)
     testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.opentelemetry.sdk.testing)
 }

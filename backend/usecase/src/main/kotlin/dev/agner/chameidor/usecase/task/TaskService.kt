@@ -1,8 +1,13 @@
 package dev.agner.chameidor.usecase.task
 
+import dev.agner.chameidor.usecase.commons.EventLevel
+import dev.agner.chameidor.usecase.commons.RequestContext
+import dev.agner.chameidor.usecase.commons.TelemetryAttributes
+import dev.agner.chameidor.usecase.commons.event
 import dev.agner.chameidor.usecase.commons.logger
 import dev.agner.chameidor.usecase.commons.now
 import dev.agner.chameidor.usecase.task.TaskStatus.QUEUED
+import dev.agner.chameidor.usecase.task.TaskTelemetryAttributes.JOB_ID
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
@@ -29,6 +34,7 @@ class TaskService(
 ) : DisposableBean {
 
     private val logger = logger()
+    private val schedulerJobId = RequestContext.newId()
     private val globalJob: Job
 
     init {
@@ -45,13 +51,18 @@ class TaskService(
         delay(5.seconds)
 
         while (true) {
-            val execDuration = measureTime {
-                runCatching { enqueueTasks() }
-                    .onFailure { logger.error("Error enqueuing tasks", it) }
-            }
+            val execDuration = enqueueOnce()
 
             val waitFor = max(enqueuePeriod.seconds.inWholeMilliseconds - execDuration.inWholeMilliseconds, 0L).also {
-                if (it == 0L) logger.warn("Enqueuing took longer than $enqueuePeriod seconds")
+                if (it == 0L) {
+                    logger.event(
+                        ENQUEUE_SLOW,
+                        JOB_ID to schedulerJobId,
+                        ENQUEUE_PERIOD_SECONDS to enqueuePeriod,
+                        ENQUEUE_DURATION_MILLIS to execDuration.inWholeMilliseconds,
+                        level = EventLevel.WARN,
+                    )
+                }
             }
             delay(waitFor.milliseconds)
         }
@@ -62,15 +73,36 @@ class TaskService(
 
     suspend fun isRunning() = globalJob.isActive
 
-    private suspend fun enqueueTasks() {
+    internal suspend fun enqueueOnce(): kotlin.time.Duration = measureTime {
+        runCatching { enqueueTasks() }
+            .onFailure {
+                logger.event(
+                    ENQUEUE_FAILED,
+                    JOB_ID to schedulerJobId,
+                    TelemetryAttributes.ERROR_TYPE to it::class.java.simpleName,
+                    level = EventLevel.ERROR,
+                    throwable = it,
+                )
+            }
+    }
+
+    internal suspend fun enqueueTasks() {
         val now = LocalDateTime.now(clock)
 
         repository.findExecutableTasks(now)
             .onEach {
                 repository.updateStatus(it.id, QUEUED)
+                val jobId = RequestContext.newId()
                 GlobalScope.launch {
-                    taskExecutor.execute(it)
+                    taskExecutor.execute(it, jobId)
                 }
             }
+    }
+
+    companion object {
+        private const val ENQUEUE_FAILED = "tasks.enqueue.failed"
+        private const val ENQUEUE_SLOW = "tasks.enqueue.slow"
+        private const val ENQUEUE_PERIOD_SECONDS = "enqueue.period.seconds"
+        private const val ENQUEUE_DURATION_MILLIS = "enqueue.duration.ms"
     }
 }

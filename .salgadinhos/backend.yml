@@ -5,4 +5,15 @@ lane: backend
 applied:
   revision: 2
   scaffold_sha: 95b7b3ed91078831644afbda05c68b0258c0577b
-allow: []
+allow:
+  # docs/observability.md §8 (chameidor): this lane has no DomainException and no StatusPages
+  # boundary, so the 4xx WARN is driven from the response status instead of the exception type.
+  - entry: http-api/src/main/kotlin/dev/agner/template/httpapi/configuration/RequestTelemetry.kt
+    reason: >-
+      The scaffold file couples the boundary record to DomainException; chameidor has no
+      domain-error type and drives the 4xx WARN from the response status instead
+      (docs/observability.md §8, chameidor row). Ported by judgment.
+  - entry: http-api/src/test/kotlin/dev/agner/template/httpapi/configuration/RequestTelemetryTest.kt
+    reason: >-
+      Same fork as RequestTelemetry.kt: the test pins the response-status-driven 4xx path, a
+      direct 401, and the parameterized-route template; it has no DomainException harness.

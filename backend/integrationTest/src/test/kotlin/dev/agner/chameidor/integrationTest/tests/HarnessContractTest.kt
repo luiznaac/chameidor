@@ -21,7 +21,7 @@ class HarnessContractTest : StringSpec({
         val checks = getRequest<List<Map<String, Any?>>> { path = "/health" }
 
         checks.map { it["service_name"] } shouldContainExactlyInAnyOrder
-            listOf("mysql-connection", "http-client", "task-job")
+            listOf("mysql-connection", "app-health", "task-job")
         for (check in checks) {
             check["is_healthy"] shouldBe true
         }
