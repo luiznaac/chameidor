@@ -60,6 +60,10 @@ Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true
 
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
 
+## Observability
+
+- [`docs/observability.md`](docs/observability.md) — the logging & metrics contract (OTLP, no traces), the request-correlation and redaction rules, the metric catalog, this lane's wiring map and the verification ladder. A diff that emits or configures telemetry is reviewed against it.
+
 ## Testing
 
 Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, Testcontainers MySQL + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
@@ -100,6 +104,11 @@ Changing a table: edit the `Table` object, then `./gradlew :persistence:generate
 | `mysql.port` | `MYSQL_PORT` | defaults to `8102` (block role `mysql`); the standalone `migrate()` path (`MysqlEnv`) reads the same variable with the same fallback |
 | `enqueue.period` | `ENQUEUE_TASKS_PERIOD` | defaults to `10` (seconds) if unset |
 | `chameidor.token` | `CHAMEIDOR_TOKEN` | required, no default; chameidor's own identity token, presented as `Authorization: Bearer` on callbacks to consumers (see [docs/external-systems.md](docs/external-systems.md)) |
+| `telemetry.service-name` | `OTEL_SERVICE_NAME` | defaults to `chameidor`; the `service.name` resource attribute |
+| `telemetry.endpoint` | `OTEL_EXPORTER_OTLP_ENDPOINT` | dev defaults to `http://localhost:4318`; **required under the prod profile — a missing value fails the boot** |
+| `telemetry.console` | `TELEMETRY_CONSOLE` | dev-only offline switch (`true` swaps both exporters for console exporters); rejected in prod |
+
+The other telemetry env vars (`OTEL_*`, `SERVICE_VERSION`, `LOG_LEVEL`) are the standard contract, untouched by the app — see [docs/observability.md](docs/observability.md) §2 "Configuration".
 
 Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setting — don't hardcode values that differ between local/prod.
 
@@ -122,6 +131,8 @@ Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14
 - Remote: `git@github.com:luiznaac/chameidor.git`, default branch `master`.
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
 - CI: `../.github/workflows/ci.yml` has independent `backend` (this module: `./gradlew clean build`) and `frontend` jobs, on every push/PR to `master`. `../.github/workflows/docker-publish.yml` runs after that succeeds on `master` and publishes the combined Docker image.
+
+Telemetry deploy gate: the prod profile requires `OTEL_EXPORTER_OTLP_ENDPOINT`, so an image carrying this wiring must not deploy until the host Collector and per-service env exist ([environments#96](https://github.com/luiznaac/environments/issues/96)). The deploy then sets `SPRING_PROFILES_ACTIVE=prod`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` and `SERVICE_VERSION`; `deploy/supervisord.conf` already gives the API program `stopwaitsecs=20` for the shutdown flush.
 
 ## Related repositories
 

@@ -6,15 +6,17 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 
 ### `usecase` — domain, ports and services
 **Purpose**: the core the other layers implement against — the task model and scheduling loop, the auth seam, the health ports and the shared JSON/clock configuration. Depends on Spring DI annotations, `kotlinx-*`, Jackson, Logback and `kotlin-reflect`; never on Ktor, Exposed or HTTP types.
-**Files**: `backend/usecase/src/main/kotlin/dev/agner/chameidor/usecase/task/{Task,TaskCreation,TaskView,TaskService,TaskExecutor,TaskQueryService}.kt`, `task/{ITaskRepository,ITaskExecutionRepository,CallClient,TaskJobHealthCheck}.kt`; `usecase/auth/{AuthorizationService,AuthorizationResult,ExternalSystem,TokenHasher,IExternalSystemRepository}.kt`; `usecase/health/{HealthChecker,HealthGateway,HealthCheckResult}.kt`; `usecase/configuration/{JsonMapper,TimeProviderConfig}.kt` and `configuration/serializers/*`; `usecase/commons/CommonExtensions.kt`; `usecase/src/testFixtures/kotlin/dev/agner/chameidor/usecase/BasicHelpers.kt`
+**Files**: `backend/usecase/src/main/kotlin/dev/agner/chameidor/usecase/task/{Task,TaskCreation,TaskView,TaskService,TaskExecutor,TaskQueryService}.kt`, `task/{ITaskRepository,ITaskExecutionRepository,CallClient,TaskJobHealthCheck}.kt`; `usecase/auth/{AuthorizationService,AuthorizationResult,ExternalSystem,TokenHasher,IExternalSystemRepository}.kt`; `usecase/health/{HealthChecker,HealthGateway,HealthCheckResult,HealthTelemetry}.kt`; `usecase/configuration/{JsonMapper,TimeProviderConfig}.kt` and `configuration/serializers/*`; `usecase/commons/{CommonExtensions,MetricCatalog,TelemetryAttributes,RequestContext,TelemetryLogging}.kt`; `usecase/src/testFixtures/kotlin/dev/agner/chameidor/usecase/BasicHelpers.kt`
 **Seam(s)**:
 - **`ITaskRepository`** (`task/ITaskRepository.kt`) — the persisted-task port consumed by `TaskService`/`TaskExecutor`; every mutation must also write the audit row through `TaskRepository.saveToHistory`. Callers name the interface, never `TaskRepository`.
 - **`ITaskExecutionRepository`** (`task/ITaskExecutionRepository.kt`) — execution-outcome port; the sealed `TaskExecutionResult` (success/failure, duration) is the record shape.
 - **`CallClient`** (`task/CallClient.kt`) — outbound callback port implemented by `gateway`'s `CallGateway`; keep `gateway` depending on `usecase`, never the reverse.
 - **`AuthorizationService.authorize(...)`** (`auth/AuthorizationService.kt`) — the one auth decision: resolve the bearer token (SHA-256 via `TokenHasher`) or the deprecated `X-External-System` alias against `IExternalSystemRepository`, returning `AuthorizationResult`. No Ktor request object crosses this seam.
 - **`HealthChecker` / `HealthGateway`** (`health/`) — inbound health port (implemented by the MySQL and outbound-HTTP checks) and outbound health port (implemented by `AppHealthGateway`).
+- **`HealthTelemetry.record(...)`** (`health/HealthTelemetry.kt`) — the `health.check.*` gauge/counter and the transition-only logs; the HTTP edge calls it, it never performs I/O in the gauge callback.
+- **`RequestContext` / `event(...)`** (`commons/RequestContext.kt`, `commons/TelemetryLogging.kt`) — the correlation carrier and the structured log call; `MetricCatalog` + `TelemetryAttributes` are the shared contract names. `usecase` may use the OTel API only, never the SDK (`docs/observability.md` §6).
 - **`TaskCreation` / `TaskStatus`** (`task/TaskCreation.kt`, `task/Task.kt`) — the one-time/periodic discriminator and the status enum mirrored by the persistence table (`cron` nullable) and by `frontend/src/api/types.ts`.
-- **`TaskService.execute()` loop** (`task/TaskService.kt`) — the background poll loop; `destroy()` cancels it, so a new lifecycle hook must preserve that cancellation.
+- **`TaskService.execute()` loop** (`task/TaskService.kt`) — the background poll loop; `destroy()` cancels it, so a new lifecycle hook must preserve that cancellation. Each enqueue mints a `job.id`, carried into `TaskExecutor.execute(task, jobId)`, which emits the single `tasks.execution.failed` ERROR; the loop runs on `GlobalScope`, so no `request.id` reaches it.
 
 ### `persistence` — Exposed/MySQL adapters and migrations
 **Purpose**: implements the `usecase` repository ports against MySQL via Exposed, and owns the Flyway migration tooling.
@@ -27,25 +29,26 @@ Module → key files → seam index for the `backend/` lane, plus the app entry 
 
 ### `gateway` — outbound HTTP integrations
 **Purpose**: Ktor-client adapters for callback delivery and the self-health probe.
-**Files**: `backend/gateway/src/main/kotlin/dev/agner/chameidor/gateway/call/CallGateway.kt`; `gateway/configuration/KtorClientConfig.kt`; `gateway/health/{AppHealthGateway,HttpClientHealthCheck}.kt`; `gateway/src/test/kotlin/dev/agner/chameidor/gateway/call/CallGatewayContractTest.kt`
+**Files**: `backend/gateway/src/main/kotlin/dev/agner/chameidor/gateway/call/CallGateway.kt`; `gateway/configuration/KtorClientConfig.kt`; `gateway/health/{AppHealthGateway,HttpClientHealthCheck}.kt`; `gateway/src/test/kotlin/dev/agner/chameidor/gateway/{call/CallGatewayContractTest,configuration/ClientTelemetryTest}.kt`
 **Seam(s)**:
 - **`CallClient` adapter** (`call/CallGateway.kt`) — `TOKEN` from `chameidor.token`, sends `Authorization: Bearer`, `X-External-System` and `X-Chameidor-Task-Id`, and throws on non-2xx. The request body is pinned against `contracts/callback-request.json`.
-- **`HealthGateway` adapter** (`health/AppHealthGateway.kt`) — probes the service's own `GET /health/internal` on `ktor.port` (`API_PORT` at runtime), not `WEB_PORT`.
-- **`KtorClientConfig`** — the one shared `HttpClient` bean (Jackson negotiation, timeout); a new integration adds an adapter here, not another client.
+- **`HealthGateway` adapter** (`health/AppHealthGateway.kt`) — probes the service's own `GET /health/internal` on `ktor.port` (`API_PORT` at runtime), not `WEB_PORT`; its component id is `app-health`.
+- **`KtorClientConfig`** — the one shared `HttpClient` bean (Jackson negotiation, `KtorClientTelemetry` for `http.client.request.duration`, and the `X-Request-ID` propagation plugin); a new integration adds an adapter here, not another client. `configureTelemetry(mapper, openTelemetry)` is the seam its contract test drives.
 
 ### `http-api` — Ktor routes and edge adapters
 **Purpose**: the HTTP surface — controllers, DTOs, content negotiation, CORS and the Ktor server bootstrap.
-**Files**: `backend/http-api/src/main/kotlin/dev/agner/chameidor/httpapi/controller/{ControllerTemplate,TaskController,HealthController}.kt` and `controller/{TaskResponse,TaskRegistrationResponse,ErrorResponse}.kt`; `http-api/src/main/kotlin/dev/agner/chameidor/httpapi/configuration/KtorConfig.kt`; `http-api/src/test/kotlin/dev/agner/chameidor/httpapi/controller/ContractFixturesTest.kt`
+**Files**: `backend/http-api/src/main/kotlin/dev/agner/chameidor/httpapi/controller/{ControllerTemplate,TaskController,HealthController}.kt` and `controller/{TaskResponse,TaskRegistrationResponse,ErrorResponse}.kt`; `http-api/src/main/kotlin/dev/agner/chameidor/httpapi/configuration/{KtorConfig,RequestTelemetry,ErrorHandling}.kt`; `http-api/src/test/kotlin/dev/agner/chameidor/httpapi/{controller/ContractFixturesTest,configuration/RequestTelemetryTest}.kt`
 **Seam(s)**:
 - **`ControllerTemplate.routes()`** (`controller/ControllerTemplate.kt`) — `typealias RouteDefinition = Routing.() -> Unit`; `KtorConfig` injects `Set<ControllerTemplate>` and mounts each one, so adding an endpoint is adding a `@Component` controller and never editing `KtorConfig`.
+- **`RequestTelemetry.install(...)`** (`configuration/RequestTelemetry.kt`) — installed before routing: binds `X-Request-ID`, echoes it, keeps `http.server.active_requests` honest and emits the single boundary record (4xx WARN driven from the response status, 5xx ERROR with exception semconv, success silent). `installErrorHandling()` owns the 500 response body; do not add a second boundary logger.
 - **Authorization gate** (`controller/TaskController.kt`) — `authorizedSystem()` reads the bearer header (and the deprecated alias), calls `AuthorizationService.authorize(...)`, and returns a JSON `ErrorResponse` with 401/403 instead of reaching a usecase.
 - **Route precedence** (`controller/TaskController.kt`) — `GET /tasks/executions` is declared before `GET /tasks/{id}` so the literal path is not captured as an id.
 - **Wire-DTO seam** (`controller/*Response.kt`) — snake_case, null-omitted JSON produced by the shared `JsonMapper`; the same shapes are mirrored in `frontend/src/api/types.ts` and pinned by `contracts/`.
 
 ### `application` — composition root
 **Purpose**: the Spring Boot entry and runtime configuration; wires the modules.
-**Files**: `backend/application/src/main/kotlin/dev/agner/chameidor/application/Boot.kt`; `application/src/main/resources/{application.yaml,application-prod.yaml,logback.xml}`
-**Seam(s)**: `Boot.kt`'s `@ComponentScan("dev.agner.chameidor")` is the wiring seam — every `@Component`/`@Service` is picked up, so a new class needs no registration. `application.yaml` is the config seam (`ktor.port`, `ktor.wait: true`, `mysql.*`, `chameidor.token`, `enqueue.period`).
+**Files**: `backend/application/src/main/kotlin/dev/agner/chameidor/application/Boot.kt`; `application/src/main/kotlin/dev/agner/chameidor/application/telemetry/{Telemetry,TelemetryConfig,TelemetryResource,TelemetryViews,RedactingMdcFilter,TelemetryJsonProviders}.kt`; `application/src/main/resources/{application.yaml,application-prod.yaml,logback-spring.xml}`
+**Seam(s)**: `Boot.kt`'s `@ComponentScan("dev.agner.chameidor")` is the wiring seam — every `@Component`/`@Service` is picked up, so a new class needs no registration. `application.yaml` is the config seam (`ktor.port`, `ktor.wait: true`, `mysql.*`, `chameidor.token`, `enqueue.period`, `telemetry.*`). `TelemetryConfig` is the one SDK composition seam: it builds the resource/exporters/views, installs the Logback appender, exposes the `OpenTelemetry`/`Meter`/`HealthTelemetry` beans and flushes on `destroy()` (10 s). `logback-spring.xml` is the log bridge (OTel appender + prod JSON / dev console) with the redaction TurboFilter as the single chokepoint; `build-info.properties` supplies `service.version`.
 
 ### `integrationTest` — full-stack test harness
 **Purpose**: end-to-end specs that boot the real app against a Testcontainers MySQL and stubbed callbacks, on free ports.
