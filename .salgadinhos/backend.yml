@@ -3,8 +3,8 @@
 source: kotlin
 lane: backend
 applied:
-  revision: 2
-  scaffold_sha: 95b7b3ed91078831644afbda05c68b0258c0577b
+  revision: 3
+  scaffold_sha: 0399d39291a6f21ab5be5cd657e2a4cec71a154c
 allow:
   # docs/observability.md §8 (chameidor): this lane has no DomainException and no domain-error
   # type, so a 4xx WARN is driven from the response status, and a framework-rejected request
@@ -15,8 +15,10 @@ allow:
       domain-error type, drives the 4xx WARN from the response status instead, and resolves a
       framework-rejected failure through Ktor's defaultExceptionStatusCode
       (docs/observability.md §8, chameidor row). Ported by judgment.
+    seen_in: 0399d39291a6f21ab5be5cd657e2a4cec71a154c
   - entry: http-api/src/test/kotlin/dev/agner/template/httpapi/configuration/RequestTelemetryTest.kt
     reason: >-
       Same fork as RequestTelemetry.kt: the test pins the response-status-driven 4xx path, a
       direct 401, the framework 4xx/504 mapping, and the parameterized-route template; it has
       no DomainException harness.
+    seen_in: 0399d39291a6f21ab5be5cd657e2a4cec71a154c
