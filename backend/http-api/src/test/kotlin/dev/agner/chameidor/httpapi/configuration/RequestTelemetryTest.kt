@@ -17,10 +17,11 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldMatch
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Routing
 import io.ktor.server.routing.get
@@ -33,6 +34,7 @@ import io.opentelemetry.sdk.metrics.SdkMeterProvider
 import io.opentelemetry.sdk.metrics.data.MetricData
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeoutException
 
 private data class Harness(
     val reader: InMemoryMetricReader,
@@ -117,12 +119,53 @@ class RequestTelemetryTest : DescribeSpec({
                 val response = client.get("/boom")
 
                 response.status shouldBe HttpStatusCode.InternalServerError
+                response.bodyAsText() shouldBe ""
                 val event = events.list.single()
                 event.level shouldBe Level.ERROR
                 event.throwableProxy.shouldNotBeNull().className shouldBe "java.lang.IllegalStateException"
                 event.mdcPropertyMap[TelemetryAttributes.ERROR_TYPE] shouldBe "IllegalStateException"
                 event.mdcPropertyMap[TelemetryAttributes.HTTP_RESPONSE_STATUS_CODE] shouldBe "500"
                 event.mdcPropertyMap[TelemetryAttributes.REQUEST_ID] shouldMatch RequestContext.GENERATED_REQUEST_ID
+            }
+        }
+
+        it("keeps a framework-rejected request a WARN 4xx through the real handler") {
+            val harness = harness()
+
+            testApplication {
+                app(harness) {
+                    get("/malformed") { throw BadRequestException("malformed body") }
+                }
+
+                val response = client.get("/malformed")
+
+                response.status shouldBe HttpStatusCode.BadRequest
+                val event = events.list.single()
+                event.level shouldBe Level.WARN
+                event.message shouldBe "http.request.failed"
+                event.throwableProxy.shouldBeNull()
+                event.mdcPropertyMap[TelemetryAttributes.ERROR_TYPE] shouldBe TelemetryAttributes.INVALID_ARGUMENT
+                event.mdcPropertyMap[TelemetryAttributes.HTTP_RESPONSE_STATUS_CODE] shouldBe "400"
+            }
+        }
+
+        it("keeps a framework timeout a WARN 504 through the real handler") {
+            val harness = harness()
+
+            testApplication {
+                app(harness) {
+                    get("/slow") { throw TimeoutException("slow") }
+                }
+
+                val response = client.get("/slow")
+
+                response.status shouldBe HttpStatusCode.GatewayTimeout
+                val event = events.list.single()
+                event.level shouldBe Level.WARN
+                event.message shouldBe "http.request.failed"
+                event.throwableProxy.shouldBeNull()
+                event.mdcPropertyMap[TelemetryAttributes.ERROR_TYPE] shouldBe TelemetryAttributes.DOMAIN_ERROR
+                event.mdcPropertyMap[TelemetryAttributes.HTTP_RESPONSE_STATUS_CODE] shouldBe "504"
             }
         }
 
@@ -280,9 +323,7 @@ private fun ApplicationTestBuilder.app(harness: Harness, routes: Routing.() -> U
 
 private fun Application.installTelemetry(telemetry: RequestTelemetry, routes: Routing.() -> Unit) {
     telemetry.install(this)
-    install(StatusPages) {
-        exception<Throwable> { call, _ -> call.respond(HttpStatusCode.InternalServerError) }
-    }
+    installErrorHandling()
     routing(routes)
 }
 

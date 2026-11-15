@@ -11,6 +11,7 @@ import dev.agner.chameidor.usecase.commons.MetricCatalog
 import dev.agner.chameidor.usecase.commons.TelemetryAttributes
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.shouldBe
@@ -45,7 +46,7 @@ import net.logstash.logback.composite.loggingevent.ThrowableMessageJsonProvider
 import net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder
 import org.slf4j.LoggerFactory
 
-private const val SERVICE_NAME = "chameidor"
+private const val SERVICE_NAME = "orders"
 
 class TelemetryConfigTest : StringSpec({
 
@@ -99,7 +100,7 @@ class TelemetryConfigTest : StringSpec({
 
         settings.endpoint shouldBe "http://localhost:4318"
         settings.environment shouldBe "dev"
-        settings.pipelines shouldBe TelemetryPipelines(TelemetryExporter.OTLP, TelemetryExporter.OTLP)
+        settings.pipelines shouldBe TelemetryPipelines(logs = TelemetryExporter.OTLP, metrics = TelemetryExporter.OTLP)
     }
 
     "TELEMETRY_CONSOLE wins over an exporter env override" {
@@ -111,7 +112,10 @@ class TelemetryConfigTest : StringSpec({
             environment = mapOf("OTEL_LOGS_EXPORTER" to "otlp", "OTEL_METRICS_EXPORTER" to "otlp"),
         )
 
-        settings.pipelines shouldBe TelemetryPipelines(TelemetryExporter.CONSOLE, TelemetryExporter.CONSOLE)
+        settings.pipelines shouldBe TelemetryPipelines(
+            logs = TelemetryExporter.CONSOLE,
+            metrics = TelemetryExporter.CONSOLE,
+        )
     }
 
     "TELEMETRY_CONSOLE swaps both exporters instead of adding one" {
@@ -123,7 +127,10 @@ class TelemetryConfigTest : StringSpec({
             environment = emptyMap(),
         )
 
-        settings.pipelines shouldBe TelemetryPipelines(TelemetryExporter.CONSOLE, TelemetryExporter.CONSOLE)
+        settings.pipelines shouldBe TelemetryPipelines(
+            logs = TelemetryExporter.CONSOLE,
+            metrics = TelemetryExporter.CONSOLE,
+        )
     }
 
     "the test profile exports nothing" {
@@ -136,7 +143,7 @@ class TelemetryConfigTest : StringSpec({
         )
 
         settings.environment shouldBe "test"
-        settings.pipelines shouldBe TelemetryPipelines(TelemetryExporter.NONE, TelemetryExporter.NONE)
+        settings.pipelines shouldBe TelemetryPipelines(logs = TelemetryExporter.NONE, metrics = TelemetryExporter.NONE)
     }
 
     "no trace exporter is ever configured" {
@@ -198,7 +205,7 @@ class TelemetryConfigTest : StringSpec({
             environment = mapOf("OTEL_LOGS_EXPORTER" to "none", "OTEL_METRICS_EXPORTER" to "none"),
         )
 
-        settings.pipelines shouldBe TelemetryPipelines(TelemetryExporter.NONE, TelemetryExporter.NONE)
+        settings.pipelines shouldBe TelemetryPipelines(logs = TelemetryExporter.NONE, metrics = TelemetryExporter.NONE)
     }
 
     "the traces exporter must stay none" {
@@ -258,7 +265,7 @@ class TelemetryConfigTest : StringSpec({
         TelemetryResourceValues.install(settings)
 
         val rendered = TelemetryJsonProviders.ResourceConverter().convert(mockk())
-        rendered shouldContain "service.name=chameidor"
+        rendered shouldContain "service.name=orders"
         rendered shouldContain "service.namespace=luiznaac"
         rendered shouldContain "service.version=1.2.3"
         rendered shouldContain "deployment.environment.name=dev"
@@ -271,7 +278,7 @@ class TelemetryConfigTest : StringSpec({
         TelemetryJsonProviders.ResourceJsonProvider().writeTo(generator, mockk())
         generator.writeEndObject()
         generator.flush()
-        output.toString() shouldContain "\"service.name\":\"chameidor\""
+        output.toString() shouldContain "\"service.name\":\"orders\""
     }
 
     "a down collector logs one WARN per outage and resets after a success" {
@@ -306,8 +313,11 @@ class TelemetryConfigTest : StringSpec({
         logExporter.export(emptyList())
         metricExporter.export(emptyList())
         events.list.size shouldBe 1
-        events.list.single().level shouldBe Level.WARN
-        events.list.single().message shouldBe "telemetry.export.failed"
+        val event = events.list.single()
+        event.level shouldBe Level.WARN
+        event.message shouldBe "telemetry.export.failed"
+        event.mdcPropertyMap["telemetry.signal"] shouldBe "logs"
+        event.mdcPropertyMap.containsKey("signal") shouldBe false
 
         result = CompletableResultCode.ofSuccess()
         logExporter.export(emptyList())
@@ -476,7 +486,7 @@ class TelemetryConfigTest : StringSpec({
         json shouldContain "\"exception.type\":\"java.lang.IllegalStateException\""
         json shouldContain "\"exception.message\":\"boom\""
         json shouldContain "\"exception.stacktrace\":"
-        json shouldContain "\"service.name\":\"chameidor\""
+        json shouldContain "\"service.name\":\"orders\""
     }
 
     "the normalize step stamps event.name from the body when a plain log carries none" {

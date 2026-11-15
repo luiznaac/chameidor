@@ -46,7 +46,7 @@ class TelemetryLoggingTest : StringSpec({
     }
 
     "clears the event scope synchronously after the call" {
-        logger.event("orders.created", "order.id" to 42)
+        logger.event("orders.created", "order.id" to 42, throwable = null)
 
         MDC.get(TelemetryAttributes.EVENT_NAME) shouldBe null
         MDC.get("order.id") shouldBe null
