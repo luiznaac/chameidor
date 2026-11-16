@@ -4,7 +4,7 @@ React 19 + Vite + TypeScript + Tailwind v4 + TanStack Query + React Router SPA f
 
 ## Code map
 
-- [`docs/code-map.md`](docs/code-map.md)
+- [`../docs/code-map.md`](../docs/code-map.md)
 
 ## Commands
 

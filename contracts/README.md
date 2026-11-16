@@ -26,12 +26,12 @@ Response `201 Created` (fixture: [`tasks-one-time-response.json`](tasks-one-time
 
 Same as one-time plus `cron` (fixture: [`tasks-periodic-request.json`](tasks-periodic-request.json)) — a required 5-field cron expression, e.g. `*/5 * * * *`. Response `201 Created` adds `cron` to the stored task (fixture: [`tasks-periodic-response.json`](tasks-periodic-response.json)).
 
-## Callback (chameidor → consumer)
+## Callback (chameidor to consumer)
 
 When a task runs, chameidor sends `POST http://{host}{endpoint}`:
 
 - Headers:
-  - `Authorization: Bearer <token>` — **chameidor's own identity**, not the task creator's. The consumer validates it against its own registry of caller tokens (same convention as chameidor's; see [backend/docs/external-systems.md](../backend/docs/external-systems.md#the-callback-chameidor--consumers)) and refuses unknown credentials.
+  - `Authorization: Bearer <token>` — **chameidor's own identity**, not the task creator's. The consumer validates it against its own registry of caller tokens (same convention as chameidor's; see [backend/docs/external-systems.md](../backend/docs/external-systems.md#the-callback-chameidor-to-consumers)) and refuses unknown credentials.
   - `X-External-System: <name>` — the system that registered the task (its `created_by`). Informational: the consumer must not authenticate by it.
   - `X-Chameidor-Task-Id: <id>` — the task's id in chameidor.
 - Body: the registered `data`, exactly as sent — no envelope, no task metadata. When the task has no `data`, the request has no body. [`callback-request.json`](callback-request.json) is the body of a task registered with `"data": {"product_id": 1}`.

@@ -5,7 +5,16 @@ Development guidelines for anyone (human, agent, or tool) working in this reposi
 Two projects, one repo:
 
 - **`backend/`** — the Kotlin/Ktor + Spring-DI + Exposed task scheduler/executor. All backend commands run from `backend/` (`cd backend && ./gradlew <task>`). Architecture, conventions and rules for evolving it are in [backend/AGENTS.md](backend/AGENTS.md) — read that before touching `backend/`.
-- **`frontend/`** — the React/Vite SPA. Commands run from `frontend/` (`npm --prefix frontend run <script>`). Details in [frontend/README.md](frontend/README.md).
+- **`frontend/`** — the React/Vite SPA. Commands run from `frontend/` (`npm --prefix frontend run <script>`). Details in [frontend/AGENTS.md](frontend/AGENTS.md).
+
+## Code map
+
+- [`docs/code-map.md`](docs/code-map.md) — module → files → seam, plus the entry points.
+
+## Documentation
+
+- The family documentation standard: [`docs/salgadinhos/documentation-standard.md`](https://github.com/luiznaac/salgadinhos/blob/master/docs/salgadinhos/documentation-standard.md).
+- The audit and refresh instrument: [`refresh-docs`](https://github.com/luiznaac/salgadinhos/blob/master/skills/refresh-docs/SKILL.md) — run its `audit` when a change hits the standard's change-kind matrix.
 
 ## Cross-cutting rule
 
@@ -25,6 +34,12 @@ No real secret has a default in code: a missing `MYSQL_*` or `CHAMEIDOR_TOKEN` f
 
 One image (repo-root `Dockerfile`, multi-stage) ships backend + frontend together: `supervisord` runs the Ktor app (`API_PORT`/8080) and `nginx` (`deploy/nginx.conf.template` — serves the built SPA on `WEB_PORT`/8081 and reverse-proxies `/api` → the app). Only the **published** host ports come from the project block — `KTOR_PORT`/8100, `WEB_HOST_PORT`/8101, `MYSQL_PORT`/8102; the SPA's Vite dev server is `FRONTEND_DEV_PORT`/8103. The four-row table is in `README.md` and the committed record is `.salgadinhos/ports.json`. No DB in the image. `docker-compose.yml` at the root adds MySQL for full-stack / DB-only local runs. `backend/docker-compose.yml` is the MySQL-only compose for backend-only local runs. The schema comes from `backend/persistence/src/main/resources/db/migration/V*.sql`, applied by Flyway (`bin/migrate` in the image) from `deploy/entrypoint.sh` before the app starts — see [backend/AGENTS.md](backend/AGENTS.md) §7. `.github/workflows/docker-publish.yml` pushes `luiznaac/chameidor:latest` + `:v<run-number>` (a sequential build number, `github.run_number`) after the "CI" workflow succeeds on `master`.
 
+## User-facing surface declaration
+
+Surfaces: **HTTP + Browser**.
+
+Run story: the combined Docker image serves the SPA and the API; the acceptance run boots it against a real MySQL and the dev fixture token. Boot and check commands: [`README.md`](README.md). App entry points: [`docs/code-map.md`](docs/code-map.md).
+
 ## Related repositories
 
-Same monorepo shape (backend + Vite SPA, combined image) as [../shougong](../shougong/AGENTS.md). The backend shares its hexagonal architecture with [../portfolio-2](../portfolio-2/AGENTS.md) and the [../environments](../environments/AGENTS.md) kotlin scaffold.
+Same monorepo shape (backend + Vite SPA, combined image) as [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md). The backend shares its hexagonal architecture with [portfolio-2](https://github.com/luiznaac/portfolio-2/blob/master/AGENTS.md) and the [environments](https://github.com/luiznaac/environments/blob/master/AGENTS.md) kotlin scaffold.
