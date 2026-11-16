@@ -6,7 +6,7 @@ All backend commands run from `backend/` (`cd backend && ./gradlew …`).
 
 ## Code map
 
-- [`docs/code-map.md`](docs/code-map.md)
+- [`../docs/code-map.md`](../docs/code-map.md)
 
 ## What this service does
 
@@ -136,4 +136,4 @@ Telemetry deploy gate: the prod profile requires `OTEL_EXPORTER_OTLP_ENDPOINT`, 
 
 ## Related repositories
 
-Generated from [environments/kotlin](../../environments/AGENTS.md), and shares the same architecture with [portfolio-2](../../portfolio-2/AGENTS.md) — which uses chameidor as its task-scheduling backend via `ChameidorGateway`. The monorepo split (`backend/` + `frontend/`, combined Docker image) mirrors [shougong](../../shougong/AGENTS.md). If you change a cross-cutting convention here (e.g. the `ControllerTemplate` wiring, the Exposed repository pattern), consider whether it should be ported to the others as well.
+Generated from [environments](https://github.com/luiznaac/environments/blob/master/AGENTS.md), and shares the same architecture with [portfolio-2](https://github.com/luiznaac/portfolio-2/blob/master/AGENTS.md) — which uses chameidor as its task-scheduling backend via `ChameidorGateway`. The monorepo split (`backend/` + `frontend/`, combined Docker image) mirrors [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md). If you change a cross-cutting convention here (e.g. the `ControllerTemplate` wiring, the Exposed repository pattern), consider whether it should be ported to the others as well.
