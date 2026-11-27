@@ -15,7 +15,7 @@ class HttpClientHealthCheck(
 ) : HealthChecker {
 
     override suspend fun getHealthStatus() = HealthCheckResult(
-        serviceName = "http-client",
+        serviceName = "app-health",
         isHealthy = try {
             healthGateway.isHealthy()
         } catch (e: Exception) {

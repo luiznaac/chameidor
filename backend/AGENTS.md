@@ -6,7 +6,7 @@ All backend commands run from `backend/` (`cd backend && ./gradlew …`).
 
 ## Code map
 
-- [`docs/code-map.md`](docs/code-map.md)
+- [`../docs/code-map.md`](../docs/code-map.md)
 
 ## What this service does
 
@@ -60,9 +60,13 @@ Detekt (`config/detekt/{config,format}.yml`), `maxIssues: 0`, `autoCorrect: true
 
 - [`CODING_STANDARDS.md`](CODING_STANDARDS.md) — "the language-idiom rules the tooling does not enforce"
 
+## Observability
+
+- [`docs/observability.md`](docs/observability.md) — the logging & metrics contract (OTLP, no traces), the request-correlation and redaction rules, the metric catalog, this lane's wiring map and the verification ladder. A diff that emits or configures telemetry is reviewed against it.
+
 ## Testing
 
-Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, `DockerComposeExtension` + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
+Kotest `StringSpec` + MockK, JUnit5 platform. Unit tests mirror the main package structure per module. Integration tests (`integrationTest` module, Testcontainers MySQL + WireMock) are for behavior that only makes sense across process boundaries (e.g. "a task actually gets called on schedule") — don't duplicate unit coverage there.
 
 Two speeds of verification, two lanes:
 
@@ -73,7 +77,7 @@ npm run be:integration             # integration lane — :integrationTest; need
 ./gradlew testCoverageReport --no-daemon  # every test plus aggregated JaCoCo; needs Docker
 ```
 
-The unit lane is the `unitTest` task — the same one the `test (backend, unit)` pre-commit hook runs — so committing never needs Docker; the integration lane stays in CI (`./gradlew clean build`, Docker present). `:integrationTest:dockerPreflight` probes the daemon before any spec starts and fails in seconds with a message that says how to proceed, instead of leaving an opaque `DockerClientProviderStrategy` error to be found in the HTML report. Scope to `./gradlew :usecase:test` etc. while iterating on one module.
+The unit lane is the `unitTest` task — the same one the `test (backend, unit)` pre-commit hook runs — so committing never needs Docker; the integration lane stays in CI (`./gradlew clean build`, Docker present). The integration suite takes free ports at run time (one Testcontainers MySQL per test JVM, an OS-probed app port, a dynamic WireMock port), so two concurrent runs — or a run beside a dev stack — do not contend; it binds none of the project's block ports. `:integrationTest:dockerPreflight` probes the daemon before any spec starts and fails in seconds with a message that says how to proceed, instead of leaving an opaque `DockerClientProviderStrategy` error to be found in the HTML report. Scope to `./gradlew :usecase:test` etc. while iterating on one module.
 
 Run check commands with `--no-daemon` — the `npm` scripts already do. A Gradle daemon left behind by a failed build inherits the shell's output pipe and can keep the command from returning long after the build itself finished.
 
@@ -86,7 +90,7 @@ The schema is versioned SQL under `persistence/src/main/resources/db/migration/V
 
 Changing a table: edit the `Table` object, then `./gradlew :persistence:generateMigrationScript -Pname=V2__add_something` (review the generated SQL — it's mechanical, won't detect a rename), then `./gradlew :persistence:migrate` locally. Full steps and pitfalls: salgadinhos' `kotlin-db-migration` skill.
 
-`integrationTest/.../tests/MigrationSchemaTest.kt` is the guard: `DockerComposeExtension` migrates the compose-provided MySQL to head before any spec runs, and this test asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails.
+`integrationTest/.../tests/MigrationSchemaTest.kt` is the guard: `MysqlContainerExtension` migrates the container MySQL to head before any spec runs, and this test asserts `MigrationUtils.statementsRequiredForDatabaseMigration(*allTables)` is empty. If a `Table` changes without a matching migration (or vice versa), this test fails.
 
 ## Configuration
 
@@ -94,11 +98,17 @@ Changing a table: edit the `Table` object, then `./gradlew :persistence:generate
 
 | Key | Source | Notes |
 |---|---|---|
-| `ktor.port` | `KTOR_PORT` | defaults to `8080`; the combined Docker image sets it to `API_PORT` so nginx can own `8081` |
+| `ktor.port` | `KTOR_PORT` | defaults to `8100` (project block role `api`); the combined Docker image sets it to `API_PORT` so nginx can own `8081` |
 | `ktor.wait` | fixed `true` | blocks main thread on the embedded server |
 | `mysql.host` / `mysql.user` / `mysql.password` | `MYSQL_HOST` / `MYSQL_USER` / `MYSQL_PASSWORD` | required env vars, no defaults |
+| `mysql.port` | `MYSQL_PORT` | defaults to `8102` (block role `mysql`); the standalone `migrate()` path (`MysqlEnv`) reads the same variable with the same fallback |
 | `enqueue.period` | `ENQUEUE_TASKS_PERIOD` | defaults to `10` (seconds) if unset |
 | `chameidor.token` | `CHAMEIDOR_TOKEN` | required, no default; chameidor's own identity token, presented as `Authorization: Bearer` on callbacks to consumers (see [docs/external-systems.md](docs/external-systems.md)) |
+| `telemetry.service-name` | `OTEL_SERVICE_NAME` | defaults to `chameidor`; the `service.name` resource attribute |
+| `telemetry.endpoint` | `OTEL_EXPORTER_OTLP_ENDPOINT` | dev defaults to `http://localhost:4318`; **required under the prod profile — a missing value fails the boot** |
+| `telemetry.console` | `TELEMETRY_CONSOLE` | dev-only offline switch (`true` swaps both exporters for console exporters); rejected in prod |
+
+The other telemetry env vars (`OTEL_*`, `SERVICE_VERSION`, `LOG_LEVEL`) are the standard contract, untouched by the app — see [docs/observability.md](docs/observability.md) §2 "Configuration".
 
 Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setting — don't hardcode values that differ between local/prod.
 
@@ -112,7 +122,7 @@ Use `${VAR}` (required) or `${VAR:default}` (optional) in YAML for any new setti
 ./gradlew detekt --no-daemon               # lint (auto-fixes what it can)
 ```
 
-Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the repo root) starts MySQL 9.4.0 empty — run `./gradlew :persistence:migrate` (or `npm run db:migrate`) to bring it to head, see "Database migrations" above — then run `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`, `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config).
+Local dev: `docker compose -f backend/docker-compose.yml up -d mysql` (or `npm run db` from the repo root) starts MySQL 9.4.0 empty on host `8102` — run `./gradlew :persistence:migrate` (or `npm run db:migrate`) to bring it to head, see "Database migrations" above — then run `dev.agner.chameidor.application.BootKt` with `MYSQL_HOST=localhost`, `MYSQL_USER=root`, `MYSQL_PASSWORD=` (see `.run/BootKt.run.xml` for the IntelliJ config; it carries no port literals — the block defaults in `application.yaml` apply).
 
 Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14-jdk21` → `openjdk:21-slim`, port `8080`). The published `luiznaac/chameidor` image is now the **combined** one built from the repo-root `Dockerfile` (backend + built SPA under supervisord + nginx) — see `../AGENTS.md`.
 
@@ -122,6 +132,8 @@ Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
 - CI: `../.github/workflows/ci.yml` has independent `backend` (this module: `./gradlew clean build`) and `frontend` jobs, on every push/PR to `master`. `../.github/workflows/docker-publish.yml` runs after that succeeds on `master` and publishes the combined Docker image.
 
+Telemetry deploy gate: the prod profile requires `OTEL_EXPORTER_OTLP_ENDPOINT`, so an image carrying this wiring must not deploy until the host Collector and per-service env exist ([environments#96](https://github.com/luiznaac/environments/issues/96)). The deploy then sets `SPRING_PROFILES_ACTIVE=prod`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` and `SERVICE_VERSION`; `deploy/supervisord.conf` already gives the API program `stopwaitsecs=20` for the shutdown flush.
+
 ## Related repositories
 
-Generated from [environments/kotlin](../../environments/AGENTS.md), and shares the same architecture with [portfolio-2](../../portfolio-2/AGENTS.md) — which uses chameidor as its task-scheduling backend via `ChameidorGateway`. The monorepo split (`backend/` + `frontend/`, combined Docker image) mirrors [shougong](../../shougong/AGENTS.md). If you change a cross-cutting convention here (e.g. the `ControllerTemplate` wiring, the Exposed repository pattern), consider whether it should be ported to the others as well.
+Generated from [environments](https://github.com/luiznaac/environments/blob/master/AGENTS.md), and shares the same architecture with [portfolio-2](https://github.com/luiznaac/portfolio-2/blob/master/AGENTS.md) — which uses chameidor as its task-scheduling backend via `ChameidorGateway`. The monorepo split (`backend/` + `frontend/`, combined Docker image) mirrors [shougong](https://github.com/luiznaac/shougong/blob/master/AGENTS.md). If you change a cross-cutting convention here (e.g. the `ControllerTemplate` wiring, the Exposed repository pattern), consider whether it should be ported to the others as well.

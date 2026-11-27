@@ -14,4 +14,4 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
       - MYSQL_DATABASE=chameidor
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-8102}:3306"

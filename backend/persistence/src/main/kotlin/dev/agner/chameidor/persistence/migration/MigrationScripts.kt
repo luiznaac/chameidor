@@ -30,7 +30,7 @@ fun main() {
 
     val mysql = MysqlEnv.fromEnvironment()
     Database.connect(
-        url = mysqlJdbcUrl(mysql.host),
+        url = mysqlJdbcUrl(host = mysql.host, port = mysql.port),
         driver = "com.mysql.cj.jdbc.Driver",
         user = mysql.user,
         password = mysql.password,

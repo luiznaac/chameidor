@@ -1,5 +1,7 @@
 package dev.agner.chameidor.integrationTest.tests
 
+import dev.agner.chameidor.integrationTest.config.mappedPort
+import dev.agner.chameidor.integrationTest.config.testMysql
 import dev.agner.chameidor.persistence.migration.allTables
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -9,7 +11,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.migration.jdbc.MigrationUtils
 
 // The guard that keeps db/migration/ and the Exposed tables from drifting apart — the failure
-// mode that made `mysql/init.sql` unmaintainable. DockerComposeExtension.beforeProject() already
+// mode that made `mysql/init.sql` unmaintainable. MysqlContainerExtension.beforeProject() already
 // migrated this database to head before any spec runs; this asks Exposed what would still have
 // to change for it to match `allTables`. Anything non-empty means someone edited a *Table without
 // writing the migration, or vice versa.
@@ -18,10 +20,10 @@ class MigrationSchemaTest : StringSpec({
 
     "migrations produce exactly the schema the Exposed tables declare" {
         val db = Database.connect(
-            url = "jdbc:mysql://localhost:3306/chameidor",
+            url = "jdbc:mysql://${testMysql.host}:${testMysql.mappedPort}/${testMysql.databaseName}",
             driver = "com.mysql.cj.jdbc.Driver",
-            user = "root",
-            password = "",
+            user = testMysql.username,
+            password = testMysql.password,
         )
         transaction(db) {
             MigrationUtils.statementsRequiredForDatabaseMigration(*allTables).shouldBeEmpty()

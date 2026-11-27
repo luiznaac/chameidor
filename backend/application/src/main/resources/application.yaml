@@ -1,9 +1,10 @@
 ktor:
-  port: ${KTOR_PORT:8080}
+  port: ${KTOR_PORT:8100}
   wait: true
 
 mysql:
   host: ${MYSQL_HOST}
+  port: ${MYSQL_PORT:8102}
   user: ${MYSQL_USER}
   password: ${MYSQL_PASSWORD}
 
@@ -15,3 +16,8 @@ chameidor:
   # consumers. Generated per app (prefix `chameidor-`), provisioned out of band; consumers keep
   # only its SHA-256. Required — see docs/external-systems.md.
   token: ${CHAMEIDOR_TOKEN}
+
+telemetry:
+  service-name: ${OTEL_SERVICE_NAME:chameidor}
+  endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
+  console: ${TELEMETRY_CONSOLE:false}

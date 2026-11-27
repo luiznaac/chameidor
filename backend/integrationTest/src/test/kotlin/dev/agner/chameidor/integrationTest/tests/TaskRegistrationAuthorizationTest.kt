@@ -3,6 +3,7 @@ package dev.agner.chameidor.integrationTest.tests
 import dev.agner.chameidor.httpapi.controller.ErrorResponse
 import dev.agner.chameidor.httpapi.controller.TaskResponse
 import dev.agner.chameidor.integrationTest.config.IntegrationTest
+import dev.agner.chameidor.integrationTest.config.resolveAppBaseUrl
 import dev.agner.chameidor.integrationTest.helpers.getBean
 import dev.agner.chameidor.persistence.auth.ExternalSystemTable
 import dev.agner.chameidor.usecase.auth.AuthorizationResult
@@ -64,7 +65,7 @@ class TaskRegistrationAuthorizationTest : StringSpec({
     }
 
     suspend fun registerOneTime(authorization: String? = null, caller: String? = null): HttpResponse =
-        getBean<HttpClient>().post("http://localhost:8080/tasks/one-time") {
+        getBean<HttpClient>().post(resolveAppBaseUrl() + "/tasks/one-time") {
             contentType(ContentType.Application.Json)
             authorization?.let { header(HttpHeaders.Authorization, it) }
             caller?.let { header(EXTERNAL_SYSTEM_HEADER, it) }
@@ -111,7 +112,7 @@ class TaskRegistrationAuthorizationTest : StringSpec({
         response.status shouldBe HttpStatusCode.Created
 
         val task = getBean<HttpClient>()
-            .get("http://localhost:8080/tasks/${response.createdTaskId()}")
+            .get(resolveAppBaseUrl() + "/tasks/${response.createdTaskId()}")
             .body<TaskResponse>()
         task.createdBy shouldBe systemName
 
@@ -146,7 +147,7 @@ class TaskRegistrationAuthorizationTest : StringSpec({
         response.status shouldBe HttpStatusCode.Created
 
         val task = getBean<HttpClient>()
-            .get("http://localhost:8080/tasks/${response.createdTaskId()}")
+            .get(resolveAppBaseUrl() + "/tasks/${response.createdTaskId()}")
             .body<TaskResponse>()
         task.createdBy shouldBe systemName
     }

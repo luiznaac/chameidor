@@ -4,14 +4,24 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.github.tomakehurst.wiremock.http.RequestMethod
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import dev.agner.chameidor.usecase.configuration.JsonMapper
 
 object HttpMockService {
 
-    private val server = WireMockServer(3000)
+    private val server = WireMockServer(options().dynamicPort())
     private val mapper = JsonMapper.jsonAdapter()
+
+    // The port is whatever the OS handed out for this run, so two concurrent suites never
+    // contend and a busy host port cannot fail the harness.
+    val baseUrl: String
+        get() = server.baseUrl()
+
+    // A task registration's `host` is a bare authority (CallGateway prepends `http://`).
+    val host: String
+        get() = baseUrl.removePrefix("http://")
 
     init {
         server.start()
