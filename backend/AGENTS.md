@@ -130,7 +130,7 @@ Docker: `backend/Dockerfile` still builds a **backend-only** image (`gradle:8.14
 
 - Remote: `git@github.com:luiznaac/chameidor.git`, default branch `master`.
 - Commits: short, imperative (`"prevent global job to die"`, `"fix zone"`). Merge via GitHub PR.
-- CI: `../.github/workflows/ci.yml` has independent `backend` (this module: `./gradlew clean build`) and `frontend` jobs, on every push/PR to `master`. `../.github/workflows/docker-publish.yml` runs after that succeeds on `master` and publishes the combined Docker image.
+- CI: `../.github/workflows/ci.yml` has independent `backend` (this module: `./gradlew clean build`) and `frontend` jobs, on every push/PR to `master`. `../.github/workflows/docker-publish.yml` publishes the combined Docker image only on a `v*` release tag, and validates the build on pull requests.
 
 Telemetry deploy gate: the prod profile requires `OTEL_EXPORTER_OTLP_ENDPOINT`, so an image carrying this wiring must not deploy until the host Collector and per-service env exist ([environments#96](https://github.com/luiznaac/environments/issues/96)). The deploy then sets `SPRING_PROFILES_ACTIVE=prod`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME` and `SERVICE_VERSION`; `deploy/supervisord.conf` already gives the API program `stopwaitsecs=20` for the shutdown flush.
 
