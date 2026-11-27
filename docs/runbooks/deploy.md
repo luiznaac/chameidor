@@ -18,7 +18,7 @@ Keep the real values out of git — a gitignored `.env`, a compose override file
 docker run -d --name chameidor --env-file .env -p 8100:8080 -p 8101:8081 luiznaac/chameidor:latest
 ```
 
-The entrypoint renders the nginx config, runs `bin/migrate` (Flyway) against the database, and only then starts `supervisord`. A failed migration aborts the container instead of serving traffic against a stale schema. Pin `v<run-number>` instead of `latest` when the deploy must be reproducible.
+The entrypoint renders the nginx config, runs `bin/migrate` (Flyway) against the database, and only then starts `supervisord`. A failed migration aborts the container instead of serving traffic against a stale schema. Pin the semver image tag (e.g. `1.2.3`, published from the `v1.2.3` release tag) or its short-SHA tag instead of `latest` when the deploy must be reproducible; `latest` moves only on a release.
 
 ## 4. Register consumers
 
@@ -35,4 +35,4 @@ The SPA is on the published `web` port; it reverse-proxies `/api` to the app.
 
 ## 6. Roll back
 
-Redeploy the previous `v<run-number>` tag. Migrations are forward-only, so a rollback that crosses a schema change also requires restoring a pre-migration database snapshot.
+Redeploy the previous semver release tag. Migrations are forward-only, so a rollback that crosses a schema change also requires restoring a pre-migration database snapshot.

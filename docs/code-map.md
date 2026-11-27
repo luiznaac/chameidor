@@ -80,11 +80,12 @@ chameidor is a monorepo of two lanes — the Gradle multi-module backend (`appli
 
 ## Repo root — contracts, deploy and CI
 **Purpose**: the cross-cutting fixtures and packaging that bind backend + frontend into one image.
-**Files**: `contracts/{tasks-one-time-request,tasks-one-time-response,tasks-periodic-request,tasks-periodic-response,callback-request}.json`, `contracts/README.md`; `deploy/{entrypoint.sh,supervisord.conf,nginx.conf.template}`; `Dockerfile`, `docker-compose.yml`, `backend/docker-compose.yml`; `package.json`; `.github/workflows/{ci,docker-publish}.yml`
+**Files**: `contracts/{tasks-one-time-request,tasks-one-time-response,tasks-periodic-request,tasks-periodic-response,callback-request}.json`, `contracts/README.md`; `deploy/{entrypoint.sh,supervisord.conf,nginx.conf.template}`; `Dockerfile`, `docker-compose.yml`, `backend/docker-compose.yml`; `package.json`; `scripts/release.sh`; `.github/workflows/{ci,docker-publish}.yml`, `.github/release.yml`, `CHANGELOG.md`
 **Seam(s)**:
 - **Contract fixtures** — consumers pin the JSON in `contracts/`; `ContractFixturesTest` keeps them equal to the real payloads, so a DTO change edits the fixture in the same commit.
 - **Container entry** (`deploy/entrypoint.sh`) — renders the nginx template, runs `/opt/app/bin/migrate` (Flyway), then `exec supervisord`; a failed migration aborts the container. `API_PORT` (app) and `WEB_PORT` (nginx, reverse-proxying `/api`) are the two ports the combined image separates.
 - **Script shims** (`package.json`) — `be:unit` is the Docker-free `unitTest` lane, `be:integration` the Docker-backed `:integrationTest:test`, `be:run` the local dev server; `db`/`db:migrate` drive the compose MySQL. Not a real Node package.
+- **Release flow** (`docker-publish.yml` + `scripts/release.sh`) — a pull request builds the root image with `push: false`; a `v*` tag cut by the script publishes immutable semver/short-SHA tags and moves `latest`; a merge to `master` never publishes.
 
 ## Entry points
 
